@@ -1,762 +1,783 @@
-﻿<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Banco de Horas - IPAJM</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrainsMono:wght@400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/styles.css">
-</head>
-<body>
-    <!-- Tela de Login -->
-    <div class="login-container" id="login-container">
-        <div class="login-background">
-            <div class="login-shapes">
-                <div class="shape shape-1"></div>
-                <div class="shape shape-2"></div>
-                <div class="shape shape-3"></div>
-            </div>
-        </div>
-        <div class="login-card">
-            <div class="login-header">
-                <div class="login-logo">
-                    <div class="login-logo-icon">SRH</div>
-                </div>
-                <h1 class="login-title">Banco de Horas</h1>
-                <p class="login-subtitle">Sistema de Recursos Humanos | IPAJM</p>
-            </div>
-            <form class="login-form" id="login-form">
-                <div class="form-group">
-                    <label for="login-user">Usuário</label>
-                    <div class="input-with-icon">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                            <circle cx="12" cy="7" r="4"/>
-                        </svg>
-                        <input type="text" id="login-user" placeholder="Digite seu usuário" required>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label for="login-password">Senha</label>
-                    <div class="input-with-icon">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                        </svg>
-                        <input type="password" id="login-password" placeholder="Digite sua senha" required>
-                    </div>
-                </div>
-                <div class="login-error" id="login-error"></div>
-                <button type="submit" class="login-btn">
-                    <span>Entrar</span>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M5 12h14M12 5l7 7-7 7"/>
-                    </svg>
-                </button>
-            </form>
-            <div class="login-footer">
-                <p>IPAJM - Instituto de Previdência</p>
-                <p>Vitória/ES - 2026</p>
-            </div>
-        </div>
-    </div>
 
-    <div class="app-container" id="app-container" style="display: none;">
-        <!-- Sidebar -->
-        <aside class="sidebar" id="sidebar">
-            <div class="sidebar-header">
-                <div class="sidebar-logo">
-                    <div class="logo-icon">BH</div>
-                    <div>
-                        <h1>Banco de Horas</h1>
-                        <span>SRH | IPAJM</span>
-                    </div>
-                </div>
-            </div>
-
-            <nav class="sidebar-nav">
-                <div class="nav-section">
-                    <div class="nav-section-title">Principal</div>
-                    <a href="#" class="nav-item active" data-page="dashboard">
-                        <span class="icon">■</span>
-                        Dashboard
-                    </a>
-                    <a href="#" class="nav-item" data-page="consulta">
-                        <span class="icon">○</span>
-                        Consulta
-                    </a>
-                </div>
-
-                <div class="nav-section">
-                    <div class="nav-section-title">Gestão</div>
-                    <a href="#" class="nav-item" data-page="registros">
-                        <span class="icon">≡</span>
-                        Dias Trabalhados
-                        <span class="badge" id="badge-registros">0</span>
-                    </a>
-                    <a href="#" class="nav-item" data-page="servidores">
-                        <span class="icon">□</span>
-                        Servidores
-                        <span class="badge" id="badge-servidores">0</span>
-                    </a>
-                    <a href="#" class="nav-item" data-page="calendario">
-                        <span class="icon">◫</span>
-                        Calendário
-                        <span class="badge alert" id="badge-alertas">0</span>
-                    </a>
-                </div>
-            </nav>
-
-            <div class="sidebar-footer">
-                <div class="user-info">
-                    <div class="user-avatar" id="user-avatar">T</div>
-                    <div class="user-details">
-                        <div class="user-name" id="user-name">Thiago</div>
-                        <div class="user-role">SRH | IPAJM</div>
-                    </div>
-                </div>
-            </div>
-        </aside>
-
-        <!-- Main Content -->
-        <main class="main-content">
-            <!-- Header -->
-            <header class="main-header">
-                <div class="header-left">
-                    <button class="icon-btn" id="toggle-sidebar" title="Menu">=</button>
-                    <div>
-                        <h1 class="page-title" id="page-title">Dashboard</h1>
-                        <div class="breadcrumb">
-                            <span>Início</span>
-                            <span>›</span>
-                            <span id="breadcrumb-current">Dashboard</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="header-right">
-                    <div class="search-box">
-                        <span class="search-icon">⌕</span>
-                        <input type="text" id="global-search" placeholder="Buscar servidor por NF ou nome...">
-                    </div>
-                    <div class="header-actions">
-                        <div class="zoom-controls">
-                            <button class="icon-btn zoom-btn" id="btn-zoom-out" title="Diminuir zoom">−</button>
-                            <span class="zoom-level" id="zoom-level">100%</span>
-                            <button class="icon-btn zoom-btn" id="btn-zoom-in" title="Aumentar zoom">+</button>
-                        </div>
-                        <div class="notification-bell" id="notification-bell" title="Alertas de Prazo">
-                            <button class="icon-btn bell-btn">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-                                    <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-                                </svg>
-                                <span class="bell-badge" id="bell-badge">0</span>
-                            </button>
-                            <div class="notification-dropdown" id="notification-dropdown">
-                                <div class="notification-header">
-                                    <h4>Alertas de Prazo</h4>
-                                    <span class="notification-count" id="notification-count">0 alertas</span>
-                                </div>
-                                <div class="notification-list" id="notification-list">
-                                    <!-- Notificações serão inseridas aqui -->
-                                </div>
-                            </div>
-                        </div>
-                        <button class="icon-btn" id="btn-refresh" title="Atualizar dados">↻</button>
-                    </div>
-                </div>
-            </header>
-
-            <!-- Page Content -->
-            <div class="page-content">
-                <!-- Dashboard Page -->
-                <div id="page-dashboard" class="page active">
-                    <!-- Stats Cards -->
-                    <div class="stats-grid">
-                        <div class="stat-card">
-                            <div class="stat-icon blue"></div>
-                            <div class="stat-info">
-                                <div class="stat-label">Total de Servidores</div>
-                                <div class="stat-value" id="stat-servidores">0</div>
-                                <div class="stat-change positive">Cadastrados no sistema</div>
-                            </div>
-                        </div>
-
-                        <div class="stat-card">
-                            <div class="stat-icon green"></div>
-                            <div class="stat-info">
-                                <div class="stat-label">Registros de Horas</div>
-                                <div class="stat-value" id="stat-registros">0</div>
-                                <div class="stat-change positive">Dias trabalhados</div>
-                            </div>
-                        </div>
-
-                        <div class="stat-card">
-                            <div class="stat-icon yellow"></div>
-                            <div class="stat-info">
-                                <div class="stat-label">Horas Trabalhadas</div>
-                                <div class="stat-value" id="stat-horas-trabalhadas">00:00</div>
-                                <div class="stat-change positive">Total acumulado</div>
-                            </div>
-                        </div>
-
-                        <div class="stat-card">
-                            <div class="stat-icon teal"></div>
-                            <div class="stat-info">
-                                <div class="stat-label">Horas de Direito</div>
-                                <div class="stat-value" id="stat-horas-direito">00:00</div>
-                                <div class="stat-change positive">2x horas trabalhadas</div>
-                            </div>
-                        </div>
-
-                        <div class="stat-card">
-                            <div class="stat-icon orange"></div>
-                            <div class="stat-info">
-                                <div class="stat-label">Horas Gozadas</div>
-                                <div class="stat-value" id="stat-horas-gozadas">00:00</div>
-                                <div class="stat-change">Folgas utilizadas</div>
-                            </div>
-                        </div>
-
-                        <div class="stat-card">
-                            <div class="stat-icon green"></div>
-                            <div class="stat-info">
-                                <div class="stat-label">Saldo Total</div>
-                                <div class="stat-value" id="stat-saldo">00:00</div>
-                                <div class="stat-change positive">Disponível para folga</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Recent Records -->
-                    <div class="data-section">
-                        <div class="data-header">
-                            <h2 class="data-title">Últimos Registros</h2>
-                            <div class="data-actions">
-                                <button class="btn btn-primary" id="btn-novo-registro">
-                                    <span>+</span> Novo Registro
-                                </button>
-                            </div>
-                        </div>
-                        <div class="data-table-wrapper">
-                            <table class="data-table" id="table-recentes">
-                                <thead>
-                                    <tr>
-                                        <th>NF</th>
-                                        <th>Nome</th>
-                                        <th>Setor</th>
-                                        <th>Data</th>
-                                        <th>Entrada</th>
-                                        <th>Saída</th>
-                                        <th>H. Trab.</th>
-                                        <th>H. Direito</th>
-                                        <th>Prazo Máx.</th>
-                                        <th>Dias Gozados</th>
-                                        <th>H. Descontadas</th>
-                                        <th>Saldo</th>
-                                        <th>Observação</th>
-                                        <th>Ações</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tbody-recentes">
-                                    <!-- Dados carregados via JavaScript -->
-                                </tbody>
-                            </table>
-                        </div>
-                        <div class="data-footer">
-                            <div class="pagination-info">
-                                Mostrando <strong id="showing-count">0</strong> de <strong id="total-count">0</strong> registros
-                            </div>
-                            <a href="#" class="btn btn-secondary" data-page="registros">Ver todos ›</a>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Consulta Page -->
-                <div id="page-consulta" class="page hidden">
-                    <div class="consulta-section">
-                        <h2 class="data-title" style="margin-bottom: 1.5rem;">Consulta por Servidor</h2>
-                        <div class="consulta-form">
-                            <div class="form-group">
-                                <label for="consulta-nf">Número Funcional (NF)</label>
-                                <input type="text" id="consulta-nf" placeholder="Digite o NF do servidor...">
-                            </div>
-                            <div class="form-group">
-                                <label for="consulta-select">Ou selecione o servidor</label>
-                                <select id="consulta-select">
-                                    <option value="">Selecione um servidor...</option>
-                                </select>
-                            </div>
-                            <button class="btn btn-primary" id="btn-consultar">
-                                <span>⌕</span> Consultar
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Resultado da Consulta -->
-                    <div id="consulta-resultado" class="hidden">
-                        <div class="servidor-card">
-                            <div class="servidor-header">
-                                <div class="servidor-avatar" id="servidor-avatar">--</div>
-                                <div class="servidor-info">
-                                    <h2 id="servidor-nome">Nome do Servidor</h2>
-                                    <div class="nf">NF: <span id="servidor-nf">0000000</span></div>
-                                    <div class="setor" id="servidor-setor">SETOR</div>
-                                </div>
-                            </div>
-                            <div class="servidor-stats">
-                                <div class="servidor-stat">
-                                    <div class="label">Horas Trabalhadas</div>
-                                    <div class="value" id="srv-horas-trab">00:00</div>
-                                </div>
-                                <div class="servidor-stat">
-                                    <div class="label">Horas de Direito</div>
-                                    <div class="value positive" id="srv-horas-direito">00:00</div>
-                                </div>
-                                <div class="servidor-stat">
-                                    <div class="label">Horas Gozadas</div>
-                                    <div class="value" id="srv-horas-gozadas">00:00</div>
-                                </div>
-                                <div class="servidor-stat">
-                                    <div class="label">Saldo Atual</div>
-                                    <div class="value positive" id="srv-saldo">00:00</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!--Histórico do Servidor -->
-                        <div class="data-section">
-                            <div class="data-header">
-                                <h2 class="data-title">Histórico de Registros</h2>
-                                <div class="data-actions">
-                                    <button class="btn btn-primary btn-sm" id="btn-add-registro-servidor">
-                                        <span>+</span> Adicionar Registro
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="data-table-wrapper">
-                                <table class="data-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Data</th>
-                                            <th>Entrada</th>
-                                            <th>Saída</th>
-                                            <th>H. Trabalhada</th>
-                                            <th>H. Direito</th>
-                                            <th>Prazo Máximo</th>
-                                            <th>Dias Gozados</th>
-                                            <th>H. Descontadas</th>
-                                            <th>Saldo</th>
-                                            <th>Observação</th>
-                                            <th>Ações</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="tbody-historico">
-                                        <!-- Dados carregados via JavaScript -->
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Empty State -->
-                    <div id="consulta-empty" class="data-section">
-                        <div class="empty-state">
-                            <div class="icon">◎</div>
-                            <h3>Nenhum servidor selecionado</h3>
-                            <p>Digite o NF ou selecione um servidor na lista para ver os detalhes.</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Registros Page -->
-                <div id="page-registros" class="page hidden">
-                    <div class="data-section">
-                        <div class="data-header">
-                            <h2 class="data-title">Todos os Dias Trabalhados</h2>
-                            <div class="data-actions">
-                                <button class="btn btn-primary" id="btn-novo-registro-page">
-                                    <span>+</span> Novo Registro
-                                </button>
-                            </div>
-                        </div>
-                        <div class="filters-row">
-                            <div class="filter-group">
-                                <label>Setor:</label>
-                                <select class="filter-select" id="filter-setor">
-                                    <option value="">Todos</option>
-                                </select>
-                            </div>
-                            <div class="filter-group">
-                                <label>Período:</label>
-                                <input type="date" class="filter-input" id="filter-data-inicio">
-                                <span>até</span>
-                                <input type="date" class="filter-input" id="filter-data-fim">
-                            </div>
-                            <div class="filter-group">
-                                <label>Servidor:</label>
-                                <input type="text" class="filter-input" id="filter-servidor" placeholder="NF ou nome...">
-                            </div>
-                            <button class="btn btn-sm btn-secondary" id="btn-limpar-filtros">Limpar</button>
-                        </div>
-                        <div class="data-table-wrapper">
-                            <table class="data-table" id="table-registros">
-                                <thead>
-                                    <tr>
-                                        <th>NF</th>
-                                        <th>Nome</th>
-                                        <th>Setor</th>
-                                        <th>Dia Trab.</th>
-                                        <th>Entrada</th>
-                                        <th>Saída</th>
-                                        <th>H. Trab.</th>
-                                        <th>H. Direito</th>
-                                        <th>Prazo Máx.</th>
-                                        <th>Dias Gozados</th>
-                                        <th>H. Descontadas</th>
-                                        <th>Saldo</th>
-                                        <th>Observação</th>
-                                        <th>Ações</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tbody-registros">
-                                    <!-- Dados carregados via JavaScript -->
-                                </tbody>
-                            </table>
-                        </div>
-                        <div class="data-footer">
-                            <div class="pagination-info">
-                                Mostrando <strong id="reg-showing">0</strong> de <strong id="reg-total">0</strong> registros
-                            </div>
-                            <div class="pagination" id="pagination-registros">
-                                <!-- Paginação via JavaScript -->
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Servidores Page -->
-                <div id="page-servidores" class="page hidden">
-                    <div class="data-section">
-                        <div class="data-header">
-                            <h2 class="data-title">Cadastro de Servidores</h2>
-                            <div class="data-actions">
-                                <button class="btn btn-primary" id="btn-novo-servidor">
-                                    <span>+</span> Novo Servidor
-                                </button>
-                            </div>
-                        </div>
-                        <div class="filters-row">
-                            <div class="filter-group">
-                                <label>Setor:</label>
-                                <select class="filter-select" id="filter-setor-srv">
-                                    <option value="">Todos</option>
-                                </select>
-                            </div>
-                            <div class="filter-group">
-                                <label>Buscar:</label>
-                                <input type="text" class="filter-input" id="filter-busca-srv" placeholder="NF ou nome...">
-                            </div>
-                        </div>
-                        <div class="data-table-wrapper">
-                            <table class="data-table" id="table-servidores">
-                                <thead>
-                                    <tr>
-                                        <th>NF</th>
-                                        <th>Nome</th>
-                                        <th>Setor</th>
-                                        <th>Horas Trabalhadas</th>
-                                        <th>Saldo</th>
-                                        <th>Ações</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tbody-servidores">
-                                    <!-- Dados carregados via JavaScript -->
-                                </tbody>
-                            </table>
-                        </div>
-                        <div class="data-footer">
-                            <div class="pagination-info">
-                                Mostrando <strong id="srv-showing">0</strong> de <strong id="srv-total">0</strong> servidores
-                            </div>
-                            <div class="pagination" id="pagination-servidores">
-                                <!-- Paginação via JavaScript -->
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Calendário Page -->
-                <div id="page-calendario" class="page hidden">
-                    <div class="calendario-container">
-                        <div class="calendario-header">
-                            <button class="btn btn-secondary" id="btn-prev-month">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
-                            </button>
-                            <h2 class="calendario-title" id="calendario-title">Janeiro 2026</h2>
-                            <button class="btn btn-secondary" id="btn-next-month">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
-                            </button>
-                            <button class="btn btn-primary" id="btn-hoje" style="margin-left: 16px;">Hoje</button>
-                        </div>
-                        
-                        <div class="calendario-legend">
-                            <div class="legend-item">
-                                <span class="legend-dot urgent"></span>
-                                <span>Prazo vence em até 7 dias</span>
-                            </div>
-                            <div class="legend-item">
-                                <span class="legend-dot warning"></span>
-                                <span>Prazo vence em 8-15 dias</span>
-                            </div>
-                            <div class="legend-item">
-                                <span class="legend-dot normal"></span>
-                                <span>Prazo com mais de 15 dias</span>
-                            </div>
-                        </div>
-
-                        <div class="calendario-grid">
-                            <div class="calendario-weekdays">
-                                <div class="weekday">DOM</div>
-                                <div class="weekday">SEG</div>
-                                <div class="weekday">TER</div>
-                                <div class="weekday">QUA</div>
-                                <div class="weekday">QUI</div>
-                                <div class="weekday">SEX</div>
-                                <div class="weekday">SÁB</div>
-                            </div>
-                            <div class="calendario-days" id="calendario-days">
-                                <!-- Dias serão renderizados via JavaScript -->
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="alertas-section">
-                        <div class="alertas-header">
-                            <h3>Alertas de Prazo</h3>
-                            <span class="alertas-count" id="alertas-count">0 servidores com prazo próximo</span>
-                        </div>
-                        <div class="alertas-list" id="alertas-list">
-                            <!-- Lista de alertas será renderizada via JavaScript -->
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </main>
-    </div>
-
-    <!-- Modal: Novo Registro -->
-    <div class="modal-overlay" id="modal-registro">
-        <div class="modal" style="max-width: 600px;">
-            <div class="modal-header">
-                <h3 class="modal-title">Novo Registro de Horas</h3>
-                <button class="modal-close" data-close-modal>&times;</button>
-            </div>
-            <div class="modal-body">
-                <form class="modal-form" id="form-registro">
-                    <div class="form-group">
-                        <label for="reg-servidor">Servidor *</label>
-                        <select id="reg-servidor" required>
-                            <option value="">Selecione um servidor...</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="reg-data">Dia Trabalhado *</label>
-                        <input type="date" id="reg-data" required>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="reg-entrada">Entrada *</label>
-                            <input type="time" id="reg-entrada" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="reg-saida">Saída *</label>
-                            <input type="time" id="reg-saida" required>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>H. Trabalhada (auto)</label>
-                            <input type="text" id="reg-htrab" readonly placeholder="Calculado automaticamente" class="readonly-field">
-                        </div>
-                        <div class="form-group">
-                            <label>H. Direito (auto: 2x)</label>
-                            <input type="text" id="reg-hdireito" readonly placeholder="2x Horas Trabalhadas" class="readonly-field">
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Prazo Máximo (auto: 6 meses)</label>
-                            <input type="text" id="reg-prazo" readonly placeholder="Calculado automaticamente" class="readonly-field">
-                        </div>
-                        <div class="form-group">
-                            <label>Hora/Dia (padrão IPAJM)</label>
-                            <input type="text" id="reg-hora-dia" value="08:00" readonly class="readonly-field">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="reg-observacao">Observação (Nº Processo E-Docs, etc.)</label>
-                        <textarea id="reg-observacao" rows="2" placeholder="Ex: Processo E-Docs 2024-ABC123, Plantão eleitoral..."></textarea>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" data-close-modal>Cancelar</button>
-                <button class="btn btn-primary" id="btn-salvar-registro">Salvar Registro</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal:Novo Servidor -->
-    <div class="modal-overlay" id="modal-servidor">
-        <div class="modal">
-            <div class="modal-header">
-                <h3 class="modal-title">Novo Servidor</h3>
-                <button class="modal-close" data-close-modal>&times;</button>
-            </div>
-            <div class="modal-body">
-                <form class="modal-form" id="form-servidor">
-                    <div class="form-group">
-                        <label for="srv-nf">Número Funcional (NF) *</label>
-                        <input type="text" id="srv-nf" required placeholder="Ex: 1234567">
-                    </div>
-                    <div class="form-group">
-                        <label for="srv-nome">Nome Completo *</label>
-                        <input type="text" id="srv-nome" required placeholder="Nome do servidor">
-                    </div>
-                    <div class="form-group">
-                        <label for="srv-setor">Setor *</label>
-                        <input type="text" id="srv-setor" required placeholder="Ex: GFB, SRH, DAF...">
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" data-close-modal>Cancelar</button>
-                <button class="btn btn-primary" id="btn-salvar-servidor">Salvar Servidor</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal:Editar Registro -->
-    <div class="modal-overlay" id="modal-editar-registro">
-        <div class="modal" style="max-width: 700px;">
-            <div class="modal-header">
-                <h3 class="modal-title">Editar Registro de Horas</h3>
-                <button class="modal-close" data-close-modal>&times;</button>
-            </div>
-            <div class="modal-body">
-                <form class="modal-form" id="form-editar-registro">
-                    <input type="hidden" id="edit-reg-id">
-                    <div class="form-group">
-                        <label>Servidor</label>
-                        <input type="text" id="edit-reg-servidor" readonly class="readonly-field">
-                    </div>
-                    <div class="form-group">
-                        <label for="edit-reg-data">Dia Trabalhado *</label>
-                        <input type="date" id="edit-reg-data" required>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="edit-reg-entrada">Entrada *</label>
-                            <input type="time" id="edit-reg-entrada" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="edit-reg-saida">Saída *</label>
-                            <input type="time" id="edit-reg-saida" required>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>H. Trabalhada (auto)</label>
-                            <input type="text" id="edit-reg-htrab" readonly class="readonly-field">
-                        </div>
-                        <div class="form-group">
-                            <label>H. Direito (auto: 2x)</label>
-                            <input type="text" id="edit-reg-hdireito" readonly class="readonly-field">
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Prazo Máximo</label>
-                            <input type="text" id="edit-reg-prazo" readonly class="readonly-field">
-                        </div>
-                        <div class="form-group">
-                            <label>Hora/Dia (padrão IPAJM)</label>
-                            <input type="text" id="edit-reg-hora-dia" value="08:00" readonly class="readonly-field">
-                        </div>
-                    </div>
-                    
-                    <hr style="margin: 1.5rem 0; border-color: var(--gray-200);">
-                    <h4 style="margin-bottom: 1rem; color: var(--gray-700);">Registro de Folgas/Gozo</h4>
-                    
-                    <div class="form-group">
-                        <label for="edit-reg-dias-gozados">Dias Gozados (datas das folgas)</label>
-                        <input type="text" id="edit-reg-dias-gozados" placeholder="Ex: 15/01/2026, 16/01/2026">
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="edit-reg-h-descontadas">Horas Descontadas</label>
-                            <input type="text" id="edit-reg-h-descontadas" placeholder="Ex: 16:00">
-                        </div>
-                        <div class="form-group">
-                            <label>Saldo Restante (auto)</label>
-                            <input type="text" id="edit-reg-saldo" readonly class="readonly-field">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="edit-reg-observacao">Observação (Nº Processo E-Docs, etc.)</label>
-                        <textarea id="edit-reg-observacao" rows="2" placeholder="Ex: Processo E-Docs 2024-ABC123, Plantão eleitoral..."></textarea>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-danger" id="btn-excluir-registro">Excluir</button>
-                <button class="btn btn-secondary" data-close-modal>Cancelar</button>
-                <button class="btn btn-primary" id="btn-atualizar-registro">Salvar Alterações</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal:Editar Servidor -->
-    <div class="modal-overlay" id="modal-editar-servidor">
-        <div class="modal">
-            <div class="modal-header">
-                <h3 class="modal-title">Editar Servidor</h3>
-                <button class="modal-close" data-close-modal>&times;</button>
-            </div>
-            <div class="modal-body">
-                <form class="modal-form" id="form-editar-servidor">
-                    <input type="hidden" id="edit-srv-id">
-                    <div class="form-group">
-                        <label for="edit-srv-nf">Número Funcional (NF) *</label>
-                        <input type="text" id="edit-srv-nf" required placeholder="Ex: 1234567">
-                    </div>
-                    <div class="form-group">
-                        <label for="edit-srv-nome">Nome Completo *</label>
-                        <input type="text" id="edit-srv-nome" required placeholder="Nome do servidor">
-                    </div>
-                    <div class="form-group">
-                        <label for="edit-srv-setor">Setor *</label>
-                        <input type="text" id="edit-srv-setor" required placeholder="Ex: GFB, SRH, DAF...">
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-danger" id="btn-excluir-servidor-modal">Excluir Servidor</button>
-                <button class="btn btn-secondary" data-close-modal>Cancelar</button>
-                <button class="btn btn-primary" id="btn-atualizar-servidor">Salvar Alterações</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Toast Container -->
-    <div class="toast-container" id="toast-container"></div>
-
-    <!-- Scripts -->
-    <script src="/static/js/app.js"></script>
-</body>
-</html>
-
-
++﻿<!DOCTYPE html>
++<html lang="pt-BR">
++<head>
++    <meta charset="UTF-8">
++    <meta name="viewport" content="width=device-width, initial-scale=1.0">
++    <title>Banco de Horas - IPAJM</title>
++    <link rel="preconnect" href="https://fonts.googleapis.com">
++    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
++    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrainsMono:wght@400;500;600&display=swap" rel="stylesheet">
++    <script src="https://cdn.tailwindcss.com"></script>
++    <script>
++        tailwind.config = {
++            theme: {
++                extend: {
++                    fontFamily: {
++                        sans: ['Inter', 'system-ui', 'sans-serif'],
++                        mono: ['JetBrains Mono', 'monospace']
++                    },
++                    boxShadow: {
++                        glow: "0 12px 34px rgba(37, 99, 235, 0.25)"
++                    }
++                }
++            }
++        }
++    </script>
++    <script src="https://unpkg.com/lucide@latest"></script>
++    <link rel="stylesheet" href="/static/css/styles.css">
++</head>
++<body>
++    <!-- Tela de Login -->
++    <div class="login-container" id="login-container">
++        <div class="login-background">
++            <div class="login-shapes">
++                <div class="shape shape-1"></div>
++                <div class="shape shape-2"></div>
++                <div class="shape shape-3"></div>
++            </div>
++        </div>
++        <div class="login-card">
++            <div class="login-header">
++                <div class="login-logo">
++                    <div class="login-logo-icon">SRH</div>
++                </div>
++                <h1 class="login-title">Banco de Horas</h1>
++                <p class="login-subtitle">Sistema de Recursos Humanos | IPAJM</p>
++            </div>
++            <form class="login-form" id="login-form">
++                <div class="form-group">
++                    <label for="login-user">Usuário</label>
++                    <div class="input-with-icon">
++                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
++                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
++                            <circle cx="12" cy="7" r="4"/>
++                        </svg>
++                        <input type="text" id="login-user" placeholder="Digite seu usuário" required>
++                    </div>
++                </div>
++                <div class="form-group">
++                    <label for="login-password">Senha</label>
++                    <div class="input-with-icon">
++                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
++                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
++                            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
++                        </svg>
++                        <input type="password" id="login-password" placeholder="Digite sua senha" required>
++                    </div>
++                </div>
++                <div class="login-error" id="login-error"></div>
++                <button type="submit" class="login-btn">
++                    <span>Entrar</span>
++                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
++                        <path d="M5 12h14M12 5l7 7-7 7"/>
++                    </svg>
++                </button>
++            </form>
++            <div class="login-footer">
++                <p>IPAJM - Instituto de Previdência</p>
++                <p>Vitória/ES - 2026</p>
++            </div>
++        </div>
++    </div>
++
++    <div class="app-container" id="app-container" style="display: none;">
++        <!-- Sidebar -->
++        <aside class="sidebar" id="sidebar">
++            <div class="sidebar-header">
++                <div class="sidebar-logo">
++                    <div class="logo-icon">BH</div>
++                    <div>
++                        <h1>Banco de Horas</h1>
++                        <span>SRH | IPAJM</span>
++                    </div>
++                </div>
++            </div>
++
++            <nav class="sidebar-nav">
++                <div class="nav-section">
++                    <div class="nav-section-title">Principal</div>
++                    <a href="#" class="nav-item active" data-page="dashboard">
++                        <i data-lucide="layout-dashboard" class="icon"></i>
++                        Dashboard
++                    </a>
++                    <a href="#" class="nav-item" data-page="consulta">
++                        <i data-lucide="search" class="icon"></i>
++                        Consulta
++                    </a>
++                </div>
++
++                <div class="nav-section">
++                    <div class="nav-section-title">Gestão</div>
++                    <a href="#" class="nav-item" data-page="registros">
++                        <i data-lucide="calendar-clock" class="icon"></i>
++                        Dias Trabalhados
++                        <span class="badge" id="badge-registros">0</span>
++                    </a>
++                    <a href="#" class="nav-item" data-page="servidores">
++                        <i data-lucide="users-round" class="icon"></i>
++                        Servidores
++                        <span class="badge" id="badge-servidores">0</span>
++                    </a>
++                    <a href="#" class="nav-item" data-page="calendario">
++                        <i data-lucide="calendar-days" class="icon"></i>
++                        Calendário
++                        <span class="badge alert" id="badge-alertas">0</span>
++                    </a>
++                </div>
++            </nav>
++
++            <div class="sidebar-footer">
++                <div class="user-info">
++                    <div class="user-avatar" id="user-avatar">T</div>
++                    <div class="user-details">
++                        <div class="user-name" id="user-name">Thiago</div>
++                        <div class="user-role">SRH | IPAJM</div>
++                    </div>
++                </div>
++            </div>
++        </aside>
++
++        <!-- Main Content -->
++        <main class="main-content">
++            <!-- Header -->
++            <header class="main-header">
++                <div class="header-left">
++                    <button class="icon-btn" id="toggle-sidebar" title="Menu"><i data-lucide="panel-left"></i></button>
++                    <div>
++                        <h1 class="page-title" id="page-title">Dashboard</h1>
++                        <div class="breadcrumb">
++                            <span>Início</span>
++                            <span>›</span>
++                            <span id="breadcrumb-current">Dashboard</span>
++                        </div>
++                    </div>
++                </div>
++                <div class="header-right">
++                    <div class="search-box">
++                        <span class="search-icon"><i data-lucide="search"></i></span>
++                        <input type="text" id="global-search" placeholder="Buscar servidor por NF ou nome...">
++                    </div>
++                    <div class="header-actions">
++                        <div class="zoom-controls">
++                            <button class="icon-btn zoom-btn" id="btn-zoom-out" title="Diminuir zoom"><i data-lucide="zoom-out"></i></button>
++                            <span class="zoom-level" id="zoom-level">100%</span>
++                            <button class="icon-btn zoom-btn" id="btn-zoom-in" title="Aumentar zoom"><i data-lucide="zoom-in"></i></button>
++                        </div>
++                        <div class="notification-bell" id="notification-bell" title="Alertas de Prazo">
++                            <button class="icon-btn bell-btn">
++                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
++                                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
++                                    <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
++                                </svg>
++                                <span class="bell-badge" id="bell-badge">0</span>
++                            </button>
++                            <div class="notification-dropdown" id="notification-dropdown">
++                                <div class="notification-header">
++                                    <h4>Alertas de Prazo</h4>
++                                    <span class="notification-count" id="notification-count">0 alertas</span>
++                                </div>
++                                <div class="notification-list" id="notification-list">
++                                    <!-- Notificações serão inseridas aqui -->
++                                </div>
++                            </div>
++                        </div>
++                        <button class="icon-btn" id="btn-refresh" title="Atualizar dados"><i data-lucide="refresh-cw"></i></button>
++                    </div>
++                </div>
++            </header>
++
++            <!-- Page Content -->
++            <div class="page-content">
++                <!-- Dashboard Page -->
++                <div id="page-dashboard" class="page active">
++                    <!-- Stats Cards -->
++                    <div class="stats-grid">
++                        <div class="stat-card">
++                            <div class="stat-icon blue"></div>
++                            <div class="stat-info">
++                                <div class="stat-label">Total de Servidores</div>
++                                <div class="stat-value" id="stat-servidores">0</div>
++                                <div class="stat-change positive">Cadastrados no sistema</div>
++                            </div>
++                        </div>
++
++                        <div class="stat-card">
++                            <div class="stat-icon green"></div>
++                            <div class="stat-info">
++                                <div class="stat-label">Registros de Horas</div>
++                                <div class="stat-value" id="stat-registros">0</div>
++                                <div class="stat-change positive">Dias trabalhados</div>
++                            </div>
++                        </div>
++
++                        <div class="stat-card">
++                            <div class="stat-icon yellow"></div>
++                            <div class="stat-info">
++                                <div class="stat-label">Horas Trabalhadas</div>
++                                <div class="stat-value" id="stat-horas-trabalhadas">00:00</div>
++                                <div class="stat-change positive">Total acumulado</div>
++                            </div>
++                        </div>
++
++                        <div class="stat-card">
++                            <div class="stat-icon teal"></div>
++                            <div class="stat-info">
++                                <div class="stat-label">Horas de Direito</div>
++                                <div class="stat-value" id="stat-horas-direito">00:00</div>
++                                <div class="stat-change positive">2x horas trabalhadas</div>
++                            </div>
++                        </div>
++
++                        <div class="stat-card">
++                            <div class="stat-icon orange"></div>
++                            <div class="stat-info">
++                                <div class="stat-label">Horas Gozadas</div>
++                                <div class="stat-value" id="stat-horas-gozadas">00:00</div>
++                                <div class="stat-change">Folgas utilizadas</div>
++                            </div>
++                        </div>
++
++                        <div class="stat-card">
++                            <div class="stat-icon green"></div>
++                            <div class="stat-info">
++                                <div class="stat-label">Saldo Total</div>
++                                <div class="stat-value" id="stat-saldo">00:00</div>
++                                <div class="stat-change positive">Disponível para folga</div>
++                            </div>
++                        </div>
++                    </div>
++
++                    <!-- Recent Records -->
++                    <div class="data-section">
++                        <div class="data-header">
++                            <h2 class="data-title">Últimos Registros</h2>
++                            <div class="data-actions">
++                                <button class="btn btn-primary" id="btn-novo-registro">
++                                    <i data-lucide="plus"></i> Novo Registro
++                                </button>
++                            </div>
++                        </div>
++                        <div class="data-table-wrapper">
++                            <table class="data-table" id="table-recentes">
++                                <thead>
++                                    <tr>
++                                        <th>NF</th>
++                                        <th>Nome</th>
++                                        <th>Setor</th>
++                                        <th>Data</th>
++                                        <th>Entrada</th>
++                                        <th>Saída</th>
++                                        <th>H. Trab.</th>
++                                        <th>H. Direito</th>
++                                        <th>Prazo Máx.</th>
++                                        <th>Dias Gozados</th>
++                                        <th>H. Descontadas</th>
++                                        <th>Saldo</th>
++                                        <th>Observação</th>
++                                        <th>Ações</th>
++                                    </tr>
++                                </thead>
++                                <tbody id="tbody-recentes">
++                                    <!-- Dados carregados via JavaScript -->
++                                </tbody>
++                            </table>
++                        </div>
++                        <div class="data-footer">
++                            <div class="pagination-info">
++                                Mostrando <strong id="showing-count">0</strong> de <strong id="total-count">0</strong> registros
++                            </div>
++                            <a href="#" class="btn btn-secondary" data-page="registros">Ver todos ›</a>
++                        </div>
++                    </div>
++                </div>
++
++                <!-- Consulta Page -->
++                <div id="page-consulta" class="page hidden">
++                    <div class="consulta-section">
++                        <h2 class="data-title" style="margin-bottom: 1.5rem;">Consulta por Servidor</h2>
++                        <div class="consulta-form">
++                            <div class="form-group">
++                                <label for="consulta-nf">Número Funcional (NF)</label>
++                                <input type="text" id="consulta-nf" placeholder="Digite o NF do servidor...">
++                            </div>
++                            <div class="form-group">
++                                <label for="consulta-select">Ou selecione o servidor</label>
++                                <select id="consulta-select">
++                                    <option value="">Selecione um servidor...</option>
++                                </select>
++                            </div>
++                            <button class="btn btn-primary" id="btn-consultar">
++                                <i data-lucide="search"></i> Consultar
++                            </button>
++                        </div>
++                    </div>
++
++                    <!-- Resultado da Consulta -->
++                    <div id="consulta-resultado" class="hidden">
++                        <div class="servidor-card">
++                            <div class="servidor-header">
++                                <div class="servidor-avatar" id="servidor-avatar">--</div>
++                                <div class="servidor-info">
++                                    <h2 id="servidor-nome">Nome do Servidor</h2>
++                                    <div class="nf">NF: <span id="servidor-nf">0000000</span></div>
++                                    <div class="setor" id="servidor-setor">SETOR</div>
++                                </div>
++                            </div>
++                            <div class="servidor-stats">
++                                <div class="servidor-stat">
++                                    <div class="label">Horas Trabalhadas</div>
++                                    <div class="value" id="srv-horas-trab">00:00</div>
++                                </div>
++                                <div class="servidor-stat">
++                                    <div class="label">Horas de Direito</div>
++                                    <div class="value positive" id="srv-horas-direito">00:00</div>
++                                </div>
++                                <div class="servidor-stat">
++                                    <div class="label">Horas Gozadas</div>
++                                    <div class="value" id="srv-horas-gozadas">00:00</div>
++                                </div>
++                                <div class="servidor-stat">
++                                    <div class="label">Saldo Atual</div>
++                                    <div class="value positive" id="srv-saldo">00:00</div>
++                                </div>
++                            </div>
++                        </div>
++
++                        <!--Histórico do Servidor -->
++                        <div class="data-section">
++                            <div class="data-header">
++                                <h2 class="data-title">Histórico de Registros</h2>
++                                <div class="data-actions">
++                                    <button class="btn btn-primary btn-sm" id="btn-add-registro-servidor">
++                                        <i data-lucide="plus"></i> Adicionar Registro
++                                    </button>
++                                </div>
++                            </div>
++                            <div class="data-table-wrapper">
++                                <table class="data-table">
++                                    <thead>
++                                        <tr>
++                                            <th>Data</th>
++                                            <th>Entrada</th>
++                                            <th>Saída</th>
++                                            <th>H. Trabalhada</th>
++                                            <th>H. Direito</th>
++                                            <th>Prazo Máximo</th>
++                                            <th>Dias Gozados</th>
++                                            <th>H. Descontadas</th>
++                                            <th>Saldo</th>
++                                            <th>Observação</th>
++                                            <th>Ações</th>
++                                        </tr>
++                                    </thead>
++                                    <tbody id="tbody-historico">
++                                        <!-- Dados carregados via JavaScript -->
++                                    </tbody>
++                                </table>
++                            </div>
++                        </div>
++                    </div>
++
++                    <!-- Empty State -->
++                    <div id="consulta-empty" class="data-section">
++                        <div class="empty-state">
++                            <div class="icon">◎</div>
++                            <h3>Nenhum servidor selecionado</h3>
++                            <p>Digite o NF ou selecione um servidor na lista para ver os detalhes.</p>
++                        </div>
++                    </div>
++                </div>
++
++                <!-- Registros Page -->
++                <div id="page-registros" class="page hidden">
++                    <div class="data-section">
++                        <div class="data-header">
++                            <h2 class="data-title">Todos os Dias Trabalhados</h2>
++                            <div class="data-actions">
++                                <button class="btn btn-primary" id="btn-novo-registro-page">
++                                    <i data-lucide="plus"></i> Novo Registro
++                                </button>
++                            </div>
++                        </div>
++                        <div class="filters-row">
++                            <div class="filter-group">
++                                <label>Setor:</label>
++                                <select class="filter-select" id="filter-setor">
++                                    <option value="">Todos</option>
++                                </select>
++                            </div>
++                            <div class="filter-group">
++                                <label>Período:</label>
++                                <input type="date" class="filter-input" id="filter-data-inicio">
++                                <span>até</span>
++                                <input type="date" class="filter-input" id="filter-data-fim">
++                            </div>
++                            <div class="filter-group">
++                                <label>Servidor:</label>
++                                <input type="text" class="filter-input" id="filter-servidor" placeholder="NF ou nome...">
++                            </div>
++                            <button class="btn btn-sm btn-secondary" id="btn-limpar-filtros">Limpar</button>
++                        </div>
++                        <div class="data-table-wrapper">
++                            <table class="data-table" id="table-registros">
++                                <thead>
++                                    <tr>
++                                        <th>NF</th>
++                                        <th>Nome</th>
++                                        <th>Setor</th>
++                                        <th>Dia Trab.</th>
++                                        <th>Entrada</th>
++                                        <th>Saída</th>
++                                        <th>H. Trab.</th>
++                                        <th>H. Direito</th>
++                                        <th>Prazo Máx.</th>
++                                        <th>Dias Gozados</th>
++                                        <th>H. Descontadas</th>
++                                        <th>Saldo</th>
++                                        <th>Observação</th>
++                                        <th>Ações</th>
++                                    </tr>
++                                </thead>
++                                <tbody id="tbody-registros">
++                                    <!-- Dados carregados via JavaScript -->
++                                </tbody>
++                            </table>
++                        </div>
++                        <div class="data-footer">
++                            <div class="pagination-info">
++                                Mostrando <strong id="reg-showing">0</strong> de <strong id="reg-total">0</strong> registros
++                            </div>
++                            <div class="pagination" id="pagination-registros">
++                                <!-- Paginação via JavaScript -->
++                            </div>
++                        </div>
++                    </div>
++                </div>
++
++                <!-- Servidores Page -->
++                <div id="page-servidores" class="page hidden">
++                    <div class="data-section">
++                        <div class="data-header">
++                            <h2 class="data-title">Cadastro de Servidores</h2>
++                            <div class="data-actions">
++                                <button class="btn btn-primary" id="btn-novo-servidor">
++                                    <i data-lucide="user-plus"></i> Novo Servidor
++                                </button>
++                            </div>
++                        </div>
++                        <div class="filters-row">
++                            <div class="filter-group">
++                                <label>Setor:</label>
++                                <select class="filter-select" id="filter-setor-srv">
++                                    <option value="">Todos</option>
++                                </select>
++                            </div>
++                            <div class="filter-group">
++                                <label>Buscar:</label>
++                                <input type="text" class="filter-input" id="filter-busca-srv" placeholder="NF ou nome...">
++                            </div>
++                        </div>
++                        <div class="data-table-wrapper">
++                            <table class="data-table" id="table-servidores">
++                                <thead>
++                                    <tr>
++                                        <th>NF</th>
++                                        <th>Nome</th>
++                                        <th>Setor</th>
++                                        <th>Horas Trabalhadas</th>
++                                        <th>Saldo</th>
++                                        <th>Ações</th>
++                                    </tr>
++                                </thead>
++                                <tbody id="tbody-servidores">
++                                    <!-- Dados carregados via JavaScript -->
++                                </tbody>
++                            </table>
++                        </div>
++                        <div class="data-footer">
++                            <div class="pagination-info">
++                                Mostrando <strong id="srv-showing">0</strong> de <strong id="srv-total">0</strong> servidores
++                            </div>
++                            <div class="pagination" id="pagination-servidores">
++                                <!-- Paginação via JavaScript -->
++                            </div>
++                        </div>
++                    </div>
++                </div>
++
++                <!-- Calendário Page -->
++                <div id="page-calendario" class="page hidden">
++                    <div class="calendario-container">
++                        <div class="calendario-header">
++                            <button class="btn btn-secondary" id="btn-prev-month">
++                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
++                            </button>
++                            <h2 class="calendario-title" id="calendario-title">Janeiro 2026</h2>
++                            <button class="btn btn-secondary" id="btn-next-month">
++                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
++                            </button>
++                            <button class="btn btn-primary" id="btn-hoje" style="margin-left: 16px;">Hoje</button>
++                        </div>
++                        
++                        <div class="calendario-legend">
++                            <div class="legend-item">
++                                <span class="legend-dot urgent"></span>
++                                <span>Prazo vence em até 7 dias</span>
++                            </div>
++                            <div class="legend-item">
++                                <span class="legend-dot warning"></span>
++                                <span>Prazo vence em 8-15 dias</span>
++                            </div>
++                            <div class="legend-item">
++                                <span class="legend-dot normal"></span>
++                                <span>Prazo com mais de 15 dias</span>
++                            </div>
++                        </div>
++
++                        <div class="calendario-grid">
++                            <div class="calendario-weekdays">
++                                <div class="weekday">DOM</div>
++                                <div class="weekday">SEG</div>
++                                <div class="weekday">TER</div>
++                                <div class="weekday">QUA</div>
++                                <div class="weekday">QUI</div>
++                                <div class="weekday">SEX</div>
++                                <div class="weekday">SÁB</div>
++                            </div>
++                            <div class="calendario-days" id="calendario-days">
++                                <!-- Dias serão renderizados via JavaScript -->
++                            </div>
++                        </div>
++                    </div>
++
++                    <div class="alertas-section">
++                        <div class="alertas-header">
++                            <h3>Alertas de Prazo</h3>
++                            <span class="alertas-count" id="alertas-count">0 servidores com prazo próximo</span>
++                        </div>
++                        <div class="alertas-list" id="alertas-list">
++                            <!-- Lista de alertas será renderizada via JavaScript -->
++                        </div>
++                    </div>
++                </div>
++            </div>
++        </main>
++    </div>
++
++    <!-- Modal: Novo Registro -->
++    <div class="modal-overlay" id="modal-registro">
++        <div class="modal" style="max-width: 600px;">
++            <div class="modal-header">
++                <h3 class="modal-title">Novo Registro de Horas</h3>
++                <button class="modal-close" data-close-modal>&times;</button>
++            </div>
++            <div class="modal-body">
++                <form class="modal-form" id="form-registro">
++                    <div class="form-group">
++                        <label for="reg-servidor">Servidor *</label>
++                        <select id="reg-servidor" required>
++                            <option value="">Selecione um servidor...</option>
++                        </select>
++                    </div>
++                    <div class="form-group">
++                        <label for="reg-data">Dia Trabalhado *</label>
++                        <input type="date" id="reg-data" required>
++                    </div>
++                    <div class="form-row">
++                        <div class="form-group">
++                            <label for="reg-entrada">Entrada *</label>
++                            <input type="time" id="reg-entrada" required>
++                        </div>
++                        <div class="form-group">
++                            <label for="reg-saida">Saída *</label>
++                            <input type="time" id="reg-saida" required>
++                        </div>
++                    </div>
++                    <div class="form-row">
++                        <div class="form-group">
++                            <label>H. Trabalhada (auto)</label>
++                            <input type="text" id="reg-htrab" readonly placeholder="Calculado automaticamente" class="readonly-field">
++                        </div>
++                        <div class="form-group">
++                            <label>H. Direito (auto: 2x)</label>
++                            <input type="text" id="reg-hdireito" readonly placeholder="2x Horas Trabalhadas" class="readonly-field">
++                        </div>
++                    </div>
++                    <div class="form-row">
++                        <div class="form-group">
++                            <label>Prazo Máximo (auto: 6 meses)</label>
++                            <input type="text" id="reg-prazo" readonly placeholder="Calculado automaticamente" class="readonly-field">
++                        </div>
++                        <div class="form-group">
++                            <label>Hora/Dia (padrão IPAJM)</label>
++                            <input type="text" id="reg-hora-dia" value="08:00" readonly class="readonly-field">
++                        </div>
++                    </div>
++                    <div class="form-group">
++                        <label for="reg-observacao">Observação (Nº Processo E-Docs, etc.)</label>
++                        <textarea id="reg-observacao" rows="2" placeholder="Ex: Processo E-Docs 2024-ABC123, Plantão eleitoral..."></textarea>
++                    </div>
++                </form>
++            </div>
++            <div class="modal-footer">
++                <button class="btn btn-secondary" data-close-modal>Cancelar</button>
++                <button class="btn btn-primary" id="btn-salvar-registro">Salvar Registro</button>
++            </div>
++        </div>
++    </div>
++
++    <!-- Modal:Novo Servidor -->
++    <div class="modal-overlay" id="modal-servidor">
++        <div class="modal">
++            <div class="modal-header">
++                <h3 class="modal-title">Novo Servidor</h3>
++                <button class="modal-close" data-close-modal>&times;</button>
++            </div>
++            <div class="modal-body">
++                <form class="modal-form" id="form-servidor">
++                    <div class="form-group">
++                        <label for="srv-nf">Número Funcional (NF) *</label>
++                        <input type="text" id="srv-nf" required placeholder="Ex: 1234567">
++                    </div>
++                    <div class="form-group">
++                        <label for="srv-nome">Nome Completo *</label>
++                        <input type="text" id="srv-nome" required placeholder="Nome do servidor">
++                    </div>
++                    <div class="form-group">
++                        <label for="srv-setor">Setor *</label>
++                        <input type="text" id="srv-setor" required placeholder="Ex: GFB, SRH, DAF...">
++                    </div>
++                </form>
++            </div>
++            <div class="modal-footer">
++                <button class="btn btn-secondary" data-close-modal>Cancelar</button>
++                <button class="btn btn-primary" id="btn-salvar-servidor">Salvar Servidor</button>
++            </div>
++        </div>
++    </div>
++
++    <!-- Modal:Editar Registro -->
++    <div class="modal-overlay" id="modal-editar-registro">
++        <div class="modal" style="max-width: 700px;">
++            <div class="modal-header">
++                <h3 class="modal-title">Editar Registro de Horas</h3>
++                <button class="modal-close" data-close-modal>&times;</button>
++            </div>
++            <div class="modal-body">
++                <form class="modal-form" id="form-editar-registro">
++                    <input type="hidden" id="edit-reg-id">
++                    <div class="form-group">
++                        <label>Servidor</label>
++                        <input type="text" id="edit-reg-servidor" readonly class="readonly-field">
++                    </div>
++                    <div class="form-group">
++                        <label for="edit-reg-data">Dia Trabalhado *</label>
++                        <input type="date" id="edit-reg-data" required>
++                    </div>
++                    <div class="form-row">
++                        <div class="form-group">
++                            <label for="edit-reg-entrada">Entrada *</label>
++                            <input type="time" id="edit-reg-entrada" required>
++                        </div>
++                        <div class="form-group">
++                            <label for="edit-reg-saida">Saída *</label>
++                            <input type="time" id="edit-reg-saida" required>
++                        </div>
++                    </div>
++                    <div class="form-row">
++                        <div class="form-group">
++                            <label>H. Trabalhada (auto)</label>
++                            <input type="text" id="edit-reg-htrab" readonly class="readonly-field">
++                        </div>
++                        <div class="form-group">
++                            <label>H. Direito (auto: 2x)</label>
++                            <input type="text" id="edit-reg-hdireito" readonly class="readonly-field">
++                        </div>
++                    </div>
++                    <div class="form-row">
++                        <div class="form-group">
++                            <label>Prazo Máximo</label>
++                            <input type="text" id="edit-reg-prazo" readonly class="readonly-field">
++                        </div>
++                        <div class="form-group">
++                            <label>Hora/Dia (padrão IPAJM)</label>
++                            <input type="text" id="edit-reg-hora-dia" value="08:00" readonly class="readonly-field">
++                        </div>
++                    </div>
++                    
++                    <hr style="margin: 1.5rem 0; border-color: var(--gray-200);">
++                    <h4 style="margin-bottom: 1rem; color: var(--gray-700);">Registro de Folgas/Gozo</h4>
++                    
++                    <div class="form-group">
++                        <label for="edit-reg-dias-gozados">Dias Gozados (datas das folgas)</label>
++                        <input type="text" id="edit-reg-dias-gozados" placeholder="Ex: 15/01/2026, 16/01/2026">
++                    </div>
++                    <div class="form-row">
++                        <div class="form-group">
++                            <label for="edit-reg-h-descontadas">Horas Descontadas</label>
++                            <input type="text" id="edit-reg-h-descontadas" placeholder="Ex: 16:00">
++                        </div>
++                        <div class="form-group">
++                            <label>Saldo Restante (auto)</label>
++                            <input type="text" id="edit-reg-saldo" readonly class="readonly-field">
++                        </div>
++                    </div>
++                    <div class="form-group">
++                        <label for="edit-reg-observacao">Observação (Nº Processo E-Docs, etc.)</label>
++                        <textarea id="edit-reg-observacao" rows="2" placeholder="Ex: Processo E-Docs 2024-ABC123, Plantão eleitoral..."></textarea>
++                    </div>
++                </form>
++            </div>
++            <div class="modal-footer">
++                <button class="btn btn-danger" id="btn-excluir-registro">Excluir</button>
++                <button class="btn btn-secondary" data-close-modal>Cancelar</button>
++                <button class="btn btn-primary" id="btn-atualizar-registro">Salvar Alterações</button>
++            </div>
++        </div>
++    </div>
++
++    <!-- Modal:Editar Servidor -->
++    <div class="modal-overlay" id="modal-editar-servidor">
++        <div class="modal">
++            <div class="modal-header">
++                <h3 class="modal-title">Editar Servidor</h3>
++                <button class="modal-close" data-close-modal>&times;</button>
++            </div>
++            <div class="modal-body">
++                <form class="modal-form" id="form-editar-servidor">
++                    <input type="hidden" id="edit-srv-id">
++                    <div class="form-group">
++                        <label for="edit-srv-nf">Número Funcional (NF) *</label>
++                        <input type="text" id="edit-srv-nf" required placeholder="Ex: 1234567">
++                    </div>
++                    <div class="form-group">
++                        <label for="edit-srv-nome">Nome Completo *</label>
++                        <input type="text" id="edit-srv-nome" required placeholder="Nome do servidor">
++                    </div>
++                    <div class="form-group">
++                        <label for="edit-srv-setor">Setor *</label>
++                        <input type="text" id="edit-srv-setor" required placeholder="Ex: GFB, SRH, DAF...">
++                    </div>
++                </form>
++            </div>
++            <div class="modal-footer">
++                <button class="btn btn-danger" id="btn-excluir-servidor-modal">Excluir Servidor</button>
++                <button class="btn btn-secondary" data-close-modal>Cancelar</button>
++                <button class="btn btn-primary" id="btn-atualizar-servidor">Salvar Alterações</button>
++            </div>
++        </div>
++    </div>
++
++    <!-- Toast Container -->
++    <div class="toast-container" id="toast-container"></div>
++
++    <!-- Scripts -->
++    <script src="/static/js/app.js"></script>
++</body>
++</html>
++
++
+ 
+EOF
+)
