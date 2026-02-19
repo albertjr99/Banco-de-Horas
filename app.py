@@ -4,6 +4,8 @@ Aplicação Flask com banco de dados, backup e autosave
 """
 
 from flask import Flask, render_template, jsonify, request, send_file
+from io import BytesIO
+import base64
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from datetime import datetime, timedelta
@@ -529,6 +531,122 @@ def get_estatisticas():
         'totalDiasFolga': round(total_dias_folga, 2)
     })
 
+
+
+
+@app.route('/api/dashboard/charts', methods=['GET'])
+def get_dashboard_charts():
+    """Gerar gráficos analíticos do dashboard (PNG em base64)"""
+    try:
+        import matplotlib
+        matplotlib.use('Agg')
+        import matplotlib.pyplot as plt
+    except Exception as e:
+        return jsonify({'error': 'Matplotlib não disponível no servidor', 'detail': str(e)}), 500
+
+    setor = request.args.get('setor', '').strip()
+    start_month = request.args.get('startMonth', '').strip()  # YYYY-MM
+    end_month = request.args.get('endMonth', '').strip()      # YYYY-MM
+
+    query = DiaTrabalhado.query
+    if setor:
+        query = query.filter(DiaTrabalhado.setor == setor)
+
+    if start_month:
+        try:
+            dt_start = datetime.strptime(start_month + '-01', '%Y-%m-%d').date()
+            query = query.filter(DiaTrabalhado.dia_trabalhado >= dt_start)
+        except Exception:
+            pass
+
+    if end_month:
+        try:
+            dt_end = datetime.strptime(end_month + '-01', '%Y-%m-%d').date()
+            from dateutil.relativedelta import relativedelta
+            dt_end = dt_end + relativedelta(months=1) - timedelta(days=1)
+            query = query.filter(DiaTrabalhado.dia_trabalhado <= dt_end)
+        except Exception:
+            pass
+
+    registros = query.order_by(DiaTrabalhado.dia_trabalhado.asc()).all()
+
+    # Agrupamentos
+    por_mes = {}
+    saldo_por_setor = {}
+    saldo_por_servidor = {}
+
+    for r in registros:
+        mes = r.dia_trabalhado.strftime('%Y-%m') if r.dia_trabalhado else 'Sem data'
+        if mes not in por_mes:
+            por_mes[mes] = {'trab': 0, 'direito': 0, 'gozadas': 0}
+
+        por_mes[mes]['trab'] += time_to_minutes(r.h_trab)
+        por_mes[mes]['direito'] += time_to_minutes(r.h_direito)
+        por_mes[mes]['gozadas'] += time_to_minutes(r.h_descontadas)
+
+        setor_nome = r.setor or 'Sem setor'
+        saldo_min = time_to_minutes(r.h_direito) - time_to_minutes(r.h_descontadas)
+        saldo_por_setor[setor_nome] = saldo_por_setor.get(setor_nome, 0) + saldo_min
+
+        chave_srv = f"{r.nome or 'Sem nome'} ({r.nf})"
+        saldo_por_servidor[chave_srv] = saldo_por_servidor.get(chave_srv, 0) + saldo_min
+
+    def fig_to_b64(fig):
+        buf = BytesIO()
+        fig.tight_layout()
+        fig.savefig(buf, format='png', dpi=140, bbox_inches='tight', facecolor=fig.get_facecolor())
+        plt.close(fig)
+        buf.seek(0)
+        return 'data:image/png;base64,' + base64.b64encode(buf.read()).decode('utf-8')
+
+    # tema
+    plt.style.use('dark_background')
+
+    # 1) Horas por mês
+    meses = sorted(por_mes.keys())
+    trab = [por_mes[m]['trab'] / 60 for m in meses]
+    direito = [por_mes[m]['direito'] / 60 for m in meses]
+    gozadas = [por_mes[m]['gozadas'] / 60 for m in meses]
+
+    fig1, ax1 = plt.subplots(figsize=(9, 4.2), facecolor='#0f172a')
+    ax1.set_facecolor('#1e293b')
+    x = list(range(len(meses)))
+    ax1.plot(x, trab, marker='o', linewidth=2.2, color='#38bdf8', label='Horas Trabalhadas')
+    ax1.plot(x, direito, marker='o', linewidth=2.2, color='#22c55e', label='Horas de Direito')
+    ax1.plot(x, gozadas, marker='o', linewidth=2.2, color='#f59e0b', label='Horas Gozadas')
+    ax1.set_title('Evolução mensal de horas', color='white', fontsize=12, fontweight='bold')
+    ax1.set_xticks(x)
+    ax1.set_xticklabels(meses, rotation=35, ha='right', fontsize=8)
+    ax1.grid(alpha=0.22)
+    ax1.legend(frameon=False, fontsize=8)
+
+    # 2) Saldo por setor
+    setores = sorted(saldo_por_setor.items(), key=lambda i: i[1], reverse=True)
+    labels_setor = [i[0] for i in setores][:8]
+    vals_setor = [i[1] / 60 for i in setores][:8]
+    fig2, ax2 = plt.subplots(figsize=(7.2, 4.2), facecolor='#0f172a')
+    ax2.set_facecolor('#1e293b')
+    colors = ['#22c55e' if v >= 0 else '#ef4444' for v in vals_setor]
+    ax2.barh(labels_setor, vals_setor, color=colors)
+    ax2.set_title('Saldo por setor (horas)', color='white', fontsize=12, fontweight='bold')
+    ax2.grid(axis='x', alpha=0.22)
+
+    # 3) Top servidores
+    tops = sorted(saldo_por_servidor.items(), key=lambda i: i[1], reverse=True)[:10]
+    labels_srv = [i[0] for i in tops]
+    vals_srv = [i[1] / 60 for i in tops]
+    fig3, ax3 = plt.subplots(figsize=(11, 4.8), facecolor='#0f172a')
+    ax3.set_facecolor('#1e293b')
+    ax3.bar(labels_srv, vals_srv, color='#60a5fa')
+    ax3.set_title('Top 10 servidores por saldo (horas)', color='white', fontsize=12, fontweight='bold')
+    ax3.tick_params(axis='x', labelrotation=25, labelsize=8)
+    ax3.grid(axis='y', alpha=0.22)
+
+    return jsonify({
+        'horasMes': fig_to_b64(fig1),
+        'saldoSetor': fig_to_b64(fig2),
+        'topServidores': fig_to_b64(fig3)
+    })
 
 @app.route('/api/consulta/<nf>', methods=['GET'])
 def consultar_servidor(nf):
