@@ -282,13 +282,29 @@
                     <div class="data-section dashboard-analytics">
                         <div class="data-header">
                             <h2 class="data-title">Análises do Banco de Horas</h2>
-
+                            <button class="btn btn-primary" id="btn-exportar-dashboard-pdf">
+                                <i data-lucide="file-text"></i> Exportar Relatório Gerencial (PDF)
+                            </button>
                         </div>
 
                         <div class="filters-row dashboard-filters-row">
                             <div class="filter-group">
+                                <label>Filtro:</label>
+                                <select class="filter-select" id="dash-filter-type">
+                                    <option value="todos">Todos</option>
+                                    <option value="setor">Por setor</option>
+                                    <option value="servidor">Por servidor</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
                                 <label>Setor:</label>
                                 <select class="filter-select" id="dash-filter-setor">
+                                    <option value="">Todos</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label>Servidor:</label>
+                                <select class="filter-select" id="dash-filter-servidor">
                                     <option value="">Todos</option>
                                 </select>
                             </div>
