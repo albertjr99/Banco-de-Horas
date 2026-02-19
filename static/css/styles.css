@@ -1185,3 +1185,78 @@ input::placeholder, textarea::placeholder { color: #94a3b8 !important; }
 }
 .day-event.warning { background: rgba(245,158,11,.2); color: #fde68a; border-left-color: #f59e0b; }
 .day-event.urgent { background: rgba(239,68,68,.22); color: #fecaca; border-left-color: #ef4444; }
+
+/* ===================================
+   HOTFIX VISUAL - contraste de login, modais e seções
+   =================================== */
+/* Remove ícone no login (bonequinho/cadeado) para não poluir leitura */
+.login-form .input-with-icon svg {
+    display: none;
+}
+.login-form .input-with-icon input {
+    padding-left: 14px !important;
+}
+
+/* Seção de consulta mais legível */
+.consulta-section {
+    background: linear-gradient(145deg, rgba(15,23,42,.88), rgba(30,41,59,.8)) !important;
+    border: 1px solid rgba(125, 211, 252, .25) !important;
+    box-shadow: 0 14px 30px rgba(2,6,23,.35);
+}
+.consulta-section label,
+.modal-form label {
+    color: #e2e8f0 !important;
+    font-weight: 600;
+}
+
+/* Modais consistentes com tema escuro/vidro */
+.modal {
+    background: linear-gradient(150deg, rgba(15,23,42,.95), rgba(30,41,59,.9)) !important;
+    border: 1px solid rgba(148,163,184,.28);
+    box-shadow: 0 24px 50px rgba(2,6,23,.5), inset 0 1px 0 rgba(255,255,255,.15);
+}
+.modal-header,
+.modal-footer {
+    border-color: rgba(148,163,184,.22) !important;
+    background: rgba(15,23,42,.42) !important;
+}
+.modal-body {
+    background: transparent;
+}
+.modal-close {
+    color: #cbd5e1 !important;
+}
+.modal-close:hover {
+    background: rgba(148,163,184,.2) !important;
+    color: #f8fafc !important;
+}
+
+/* Inputs/Select/Textarea em modal e consulta */
+.consulta-section input,
+.consulta-section select,
+.modal input,
+.modal select,
+.modal textarea {
+    background: rgba(51,65,85,.78) !important;
+    border: 1px solid rgba(148,163,184,.45) !important;
+    color: #f8fafc !important;
+    font-size: 16px;
+}
+.consulta-section input::placeholder,
+.modal input::placeholder,
+.modal textarea::placeholder {
+    color: #cbd5e1 !important;
+}
+.consulta-section input:focus,
+.consulta-section select:focus,
+.modal input:focus,
+.modal select:focus,
+.modal textarea:focus {
+    border-color: rgba(56,189,248,.75) !important;
+    box-shadow: 0 0 0 3px rgba(56,189,248,.2) !important;
+}
+
+.readonly-field {
+    opacity: .95;
+    color: #dbeafe !important;
+}
