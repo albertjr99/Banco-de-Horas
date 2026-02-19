@@ -189,6 +189,12 @@ function formatTime(timeStr) {
     return timeStr.substring(0, 5);
 }
 
+function timeToMinutes(timeStr) {
+    if (!timeStr || !timeStr.includes(':')) return 0;
+    const [h, m] = timeStr.split(':').map(Number);
+    return h * 60 + m;
+}
+
 function calcularHoras(entrada, saida) {
     if (!entrada || !saida) return '00:00';
     const [h1, m1] = entrada.split(':').map(Number);
@@ -268,6 +274,7 @@ let registros = [];
 let setores = new Set();
 let currentPage = 1;
 const perPage = 20;
+let dashboardCharts = { horasMes: null, saldoSetor: null, topServidores: null };
 
 // ===================================
 // Data Loading
@@ -441,7 +448,8 @@ function renderRegistros(page = 1) {
                     <td class="cell-obs" title="${r.observacao || ''}">${truncateText(r.observacao, 20) || '-'}</td>
                     <td class="table-actions">
                         <button class="btn-icon edit" onclick="editarRegistro(${r.id})" title="Editar"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-                        <button class="btn-icon delete" onclick="confirmarExclusao(${r.id})" title="Excluir"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+                        <button class="btn-icon view" onclick="abrirModalGozo(${r.id})" title="Registrar gozo"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></button>
+                    <button class="btn-icon delete" onclick="confirmarExclusao(${r.id})" title="Excluir"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
                     </td>
                 </tr>
             `;
@@ -499,42 +507,132 @@ function renderRegistrosResumo(filteredRegs = []) {
                 <td><span class="cell-setor">${i.setor}</span></td>
                 <td>${i.registros}</td>
                 <td><span class="cell-hours neutral">${totalDireito}</span></td>
+                <td>${(timeToMinutes(totalDireito) / 480).toFixed(2)}</td>
                 <td><span class="cell-hours negative">${totalGozadas}</span></td>
+                <td>${(timeToMinutes(totalGozadas) / 480).toFixed(2)}</td>
                 <td><span class="cell-hours ${getSaldoClass(saldo)}">${saldo}</span></td>
+                <td>${(saldoMin / 480).toFixed(2)}</td>
             </tr>
         `;
     });
 
     tbody.innerHTML = rows.length ? rows.join('') : `
-        <tr><td colspan="7" class="text-center" style="padding: 1.5rem;">Sem dados para o resumo aglutinado.</td></tr>
+        <tr><td colspan="10" class="text-center" style="padding: 1.5rem;">Sem dados para o resumo aglutinado.</td></tr>
     `;
 }
 
 async function loadDashboardCharts() {
-    const chartHoras = document.getElementById('chart-horas-mes');
-    const chartSetor = document.getElementById('chart-saldo-setor');
-    const chartTop = document.getElementById('chart-top-servidores');
-    if (!chartHoras || !chartSetor || !chartTop) return;
+    if (typeof Chart === 'undefined') return;
+
+    const canvasHoras = document.getElementById('chart-horas-mes');
+    const canvasSetor = document.getElementById('chart-saldo-setor');
+    const canvasTop = document.getElementById('chart-top-servidores');
+    if (!canvasHoras || !canvasSetor || !canvasTop) return;
 
     const setor = document.getElementById('dash-filter-setor')?.value || '';
     const startMonth = document.getElementById('dash-filter-start-month')?.value || '';
     const endMonth = document.getElementById('dash-filter-end-month')?.value || '';
 
-    const params = new URLSearchParams();
-    if (setor) params.append('setor', setor);
-    if (startMonth) params.append('startMonth', startMonth);
-    if (endMonth) params.append('endMonth', endMonth);
+    const filtered = registros.filter(r => {
+        if (setor && r.setor !== setor) return false;
+        const d = r.dia_trabalhado ? new Date(r.dia_trabalhado) : null;
+        if (startMonth && d) {
+            const start = new Date(`${startMonth}-01`);
+            if (d < start) return false;
+        }
+        if (endMonth && d) {
+            const end = new Date(`${endMonth}-28`);
+            end.setMonth(end.getMonth() + 1);
+            if (d >= end) return false;
+        }
+        return true;
+    });
 
-    try {
-        const data = await API.get(`/api/dashboard/charts?${params.toString()}`);
-        chartHoras.src = data.horasMes;
-        chartSetor.src = data.saldoSetor;
-        chartTop.src = data.topServidores;
-    } catch (error) {
-        chartHoras.removeAttribute('src');
-        chartSetor.removeAttribute('src');
-        chartTop.removeAttribute('src');
-    }
+    const porMes = new Map();
+    const porSetor = new Map();
+    const porServidor = new Map();
+
+    filtered.forEach(r => {
+        const mes = r.dia_trabalhado ? r.dia_trabalhado.slice(0, 7) : 'Sem data';
+        if (!porMes.has(mes)) porMes.set(mes, { trab: 0, direito: 0, gozadas: 0 });
+        porMes.get(mes).trab += timeToMinutes(r.h_trabalhada || '00:00');
+        porMes.get(mes).direito += timeToMinutes(r.h_direito || '00:00');
+        porMes.get(mes).gozadas += timeToMinutes(r.horas_descontadas || '00:00');
+
+        const saldo = timeToMinutes(r.h_direito || '00:00') - timeToMinutes(r.horas_descontadas || '00:00');
+        const s = r.setor || 'Sem setor';
+        porSetor.set(s, (porSetor.get(s) || 0) + saldo);
+
+        const srv = `${r.nome || 'Sem nome'} (${r.nf})`;
+        porServidor.set(srv, (porServidor.get(srv) || 0) + saldo);
+    });
+
+    const months = Array.from(porMes.keys()).sort();
+    const trabData = months.map(m => +(porMes.get(m).trab / 60).toFixed(2));
+    const direitoData = months.map(m => +(porMes.get(m).direito / 60).toFixed(2));
+    const gozadasData = months.map(m => +(porMes.get(m).gozadas / 60).toFixed(2));
+
+    const setores = Array.from(porSetor.entries()).sort((a,b)=>b[1]-a[1]).slice(0,8);
+    const setorLabels = setores.map(([k])=>k);
+    const setorValues = setores.map(([,v])=> +(v/60).toFixed(2));
+
+    const tops = Array.from(porServidor.entries()).sort((a,b)=>b[1]-a[1]).slice(0,10);
+    const topLabels = tops.map(([k])=>k);
+    const topValues = tops.map(([,v])=> +(v/60).toFixed(2));
+
+    const tooltipPercent = (context, totalArr) => {
+        const v = context.parsed.y ?? context.parsed.x ?? 0;
+        const total = totalArr.reduce((a,b)=>a+Math.abs(b),0) || 1;
+        const pct = (Math.abs(v) / total) * 100;
+        return `${context.dataset.label || 'Valor'}: ${v.toFixed(2)}h (${pct.toFixed(1)}%)`;
+    };
+
+    Object.values(dashboardCharts).forEach(c => c && c.destroy());
+
+    dashboardCharts.horasMes = new Chart(canvasHoras, {
+        type: 'line',
+        data: {
+            labels: months,
+            datasets: [
+                { label: 'Horas Trabalhadas', data: trabData, borderColor: '#38bdf8', backgroundColor: '#38bdf844', tension: .35, fill: false },
+                { label: 'Horas de Direito', data: direitoData, borderColor: '#22c55e', backgroundColor: '#22c55e44', tension: .35, fill: false },
+                { label: 'Horas Gozadas', data: gozadasData, borderColor: '#f59e0b', backgroundColor: '#f59e0b44', tension: .35, fill: false }
+            ]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { labels: { color: '#e2e8f0' } },
+                tooltip: { callbacks: { label: (ctx) => tooltipPercent(ctx, [ ...trabData, ...direitoData, ...gozadasData ]) } }
+            },
+            scales: {
+                x: { ticks: { color: '#cbd5e1' }, grid: { color: '#33415566' } },
+                y: { ticks: { color: '#cbd5e1' }, grid: { color: '#33415566' } }
+            }
+        }
+    });
+
+    dashboardCharts.saldoSetor = new Chart(canvasSetor, {
+        type: 'bar',
+        data: { labels: setorLabels, datasets: [{ label: 'Saldo (h)', data: setorValues, backgroundColor: setorValues.map(v => v >= 0 ? '#22c55ecc' : '#ef4444cc') }] },
+        options: {
+            indexAxis: 'y',
+            plugins: { legend: { labels: { color: '#e2e8f0' } }, tooltip: { callbacks: { label: (ctx) => tooltipPercent(ctx, setorValues) } } },
+            scales: { x: { ticks: { color: '#cbd5e1' }, grid: { color: '#33415566' } }, y: { ticks: { color: '#cbd5e1' }, grid: { color: '#33415533' } } }
+        }
+    });
+
+    dashboardCharts.topServidores = new Chart(canvasTop, {
+        type: 'bar',
+        data: { labels: topLabels, datasets: [{ label: 'Saldo (h)', data: topValues, backgroundColor: '#60a5facc' }] },
+        options: {
+            plugins: { legend: { labels: { color: '#e2e8f0' } }, tooltip: { callbacks: { label: (ctx) => tooltipPercent(ctx, topValues) } } },
+            scales: {
+                x: { ticks: { color: '#cbd5e1', maxRotation: 25, minRotation: 25 }, grid: { color: '#33415533' } },
+                y: { ticks: { color: '#cbd5e1' }, grid: { color: '#33415566' } }
+            }
+        }
+    });
 }
 
 function renderServidores(page = 1) {
@@ -836,6 +934,91 @@ async function atualizarRegistro() {
     } catch (error) {
         console.error(error);
         showToast('error', 'Erro', 'Não foi possível atualizar o registro');
+    }
+}
+
+
+
+function abrirModalGozo(id) {
+    const registro = registros.find(r => r.id === id);
+    if (!registro) return;
+
+    document.getElementById('gozo-reg-id').value = id;
+    document.getElementById('gozo-servidor').value = `${registro.nome} (${registro.nf})`;
+    document.getElementById('gozo-dias-datas').value = registro.dias_gozados || '';
+    document.getElementById('gozo-horas-descontadas').value = registro.horas_descontadas || '';
+
+    const horasDia = (registro.hora_dia || '08:00');
+    const totalDireito = registro.h_direito || '00:00';
+    const descontadas = registro.horas_descontadas || '00:00';
+    const saldoMin = timeToMinutes(totalDireito) - timeToMinutes(descontadas);
+    document.getElementById('gozo-saldo-horas').value = `${saldoMin < 0 ? '-' : ''}${String(Math.floor(Math.abs(saldoMin)/60)).padStart(2,'0')}:${String(Math.abs(saldoMin)%60).padStart(2,'0')}`;
+    const minDia = timeToMinutes(horasDia) || 480;
+    document.getElementById('gozo-saldo-dias').value = (saldoMin / minDia).toFixed(2);
+
+    const diasQtd = timeToMinutes(descontadas) / minDia;
+    document.getElementById('gozo-dias-quantidade').value = diasQtd > 0 ? diasQtd.toFixed(2) : '';
+
+    openModal('modal-gozo-registro');
+}
+
+function bindGozoAutoCalc() {
+    const diasInput = document.getElementById('gozo-dias-quantidade');
+    const horasInput = document.getElementById('gozo-horas-descontadas');
+    const saldoHoras = document.getElementById('gozo-saldo-horas');
+    const saldoDias = document.getElementById('gozo-saldo-dias');
+
+    function getContext() {
+        const id = Number(document.getElementById('gozo-reg-id').value);
+        const registro = registros.find(r => r.id === id);
+        const minDia = timeToMinutes((registro?.hora_dia || '08:00')) || 480;
+        const direitoMin = timeToMinutes(registro?.h_direito || '00:00');
+        return { minDia, direitoMin };
+    }
+
+    function hoursFromDays(dias) {
+        const { minDia } = getContext();
+        const totalMin = Math.round((Number(dias) || 0) * minDia);
+        return `${String(Math.floor(totalMin/60)).padStart(2,'0')}:${String(totalMin%60).padStart(2,'0')}`;
+    }
+
+    function refreshSaldos() {
+        const { minDia, direitoMin } = getContext();
+        const gastoMin = timeToMinutes(horasInput.value || '00:00');
+        const saldoMin = direitoMin - gastoMin;
+        saldoHoras.value = `${saldoMin < 0 ? '-' : ''}${String(Math.floor(Math.abs(saldoMin)/60)).padStart(2,'0')}:${String(Math.abs(saldoMin)%60).padStart(2,'0')}`;
+        saldoDias.value = (saldoMin / minDia).toFixed(2);
+    }
+
+    diasInput?.addEventListener('input', () => {
+        if (diasInput.value !== '') horasInput.value = hoursFromDays(diasInput.value);
+        refreshSaldos();
+    });
+
+    horasInput?.addEventListener('input', () => {
+        const { minDia } = getContext();
+        const mins = timeToMinutes(horasInput.value || '00:00');
+        diasInput.value = mins ? (mins / minDia).toFixed(2) : '';
+        refreshSaldos();
+    });
+}
+
+async function salvarGozoRegistro() {
+    const id = document.getElementById('gozo-reg-id').value;
+    const horasDescontadas = document.getElementById('gozo-horas-descontadas').value || '00:00';
+    const diasDatas = document.getElementById('gozo-dias-datas').value || '';
+
+    try {
+        await API.put(`/api/dias-trabalhados/${id}`, {
+            dias_gozados: diasDatas,
+            horas_descontadas: horasDescontadas
+        });
+        showToast('success', 'Sucesso', 'Gozo/uso de horas atualizado com sucesso');
+        closeModal('modal-gozo-registro');
+        await loadData();
+    } catch (error) {
+        console.error(error);
+        showToast('error', 'Erro', 'Não foi possível salvar o gozo');
     }
 }
 
@@ -1330,6 +1513,30 @@ function setupAutoCalculate() {
     editSaida.addEventListener('change', updateEditCalc);
 }
 
+
+
+function initRegistrosViewToggle() {
+    const container = document.getElementById('registros-view-toggle');
+    const detalhado = document.getElementById('registros-detalhado');
+    const resumo = document.getElementById('registros-resumo');
+    if (!container || !detalhado || !resumo) return;
+
+    container.querySelectorAll('.toggle-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            container.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            const view = btn.dataset.view;
+            if (view === 'resumo') {
+                detalhado.classList.add('hidden');
+                resumo.classList.remove('hidden');
+            } else {
+                detalhado.classList.remove('hidden');
+                resumo.classList.add('hidden');
+            }
+        });
+    });
+}
+
 // ===================================
 // Event Listeners
 // ===================================
@@ -1349,6 +1556,7 @@ function initApp() {
     
     // Setup auto-calculate
     setupAutoCalculate();
+    initRegistrosViewToggle();
     
     // Navigation
     document.querySelectorAll('.nav-item[data-page]').forEach(item => {
@@ -1379,7 +1587,7 @@ function initApp() {
     });
     
     // Botões de novo registro
-    document.getElementById('btn-novo-registro').addEventListener('click', () => openModal('modal-registro'));
+    document.getElementById('btn-novo-registro')?.addEventListener('click', () => openModal('modal-registro'));
     document.getElementById('btn-novo-registro-page').addEventListener('click', () => openModal('modal-registro'));
     document.getElementById('btn-add-registro-servidor').addEventListener('click', () => {
         const nf = document.getElementById('servidor-nf').textContent;
@@ -1398,6 +1606,10 @@ function initApp() {
     
     // Atualizar registro
     document.getElementById('btn-atualizar-registro').addEventListener('click', atualizarRegistro);
+
+    // Salvar gozo
+    document.getElementById('btn-salvar-gozo')?.addEventListener('click', salvarGozoRegistro);
+    bindGozoAutoCalc();
     
     // Excluir registro do modal
     document.getElementById('btn-excluir-registro').addEventListener('click', () => {
