@@ -299,10 +299,10 @@ async function loadData() {
         // Atualizar estatísticas
         updateStats();
         
-        // Atualizar tabelas
-        renderRecentRecords();
+        // Atualizar telas
         renderServidores();
         renderRegistros();
+        loadDashboardCharts();
         
         // Calcular alertas de prazo
         calcularAlertas();
@@ -314,7 +314,7 @@ async function loadData() {
 }
 
 function populateSetorFilters() {
-    const selects = ['filter-setor', 'filter-setor-srv'];
+    const selects = ['filter-setor', 'filter-setor-srv', 'dash-filter-setor'];
     selects.forEach(id => {
         const select = document.getElementById(id);
         if (select) {
@@ -367,59 +367,18 @@ function updateStats() {
 // ===================================
 
 function renderRecentRecords() {
-    const tbody = document.getElementById('tbody-recentes');
-    const recent = [...registros].sort((a, b) => 
-        new Date(b.dia_trabalhado) - new Date(a.dia_trabalhado)
-    ).slice(0, 10);
-    
-    if (recent.length === 0) {
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="14" class="text-center" style="padding: 2rem;">
-                    Nenhum registro encontrado
-                </td>
-            </tr>
-        `;
-        return;
-    }
-    
-    tbody.innerHTML = recent.map(r => `
-        <tr>
-            <td class="cell-nf">${r.nf}</td>
-            <td class="cell-name" title="${r.nome || ''}">${r.nome || '-'}</td>
-            <td><span class="cell-setor">${r.setor || '-'}</span></td>
-            <td class="cell-date">${formatDate(r.dia_trabalhado)}</td>
-            <td class="cell-time">${formatTime(r.entrada)}</td>
-            <td class="cell-time">${formatTime(r.saida)}</td>
-            <td><span class="cell-hours positive">${r.h_trabalhada || '-'}</span></td>
-            <td><span class="cell-hours neutral">${r.h_direito || '-'}</span></td>
-            <td class="cell-date">${formatDate(r.prazo_max)}</td>
-            <td class="cell-date">${r.dias_gozados || '-'}</td>
-            <td><span class="cell-hours ${r.horas_descontadas ? 'negative' : 'neutral'}">${r.horas_descontadas || '-'}</span></td>
-            <td><span class="cell-hours ${getSaldoClass(r.saldo)}">${r.saldo || '-'}</span></td>
-            <td class="cell-obs" title="${r.observacao || ''}">${truncateText(r.observacao, 20) || '-'}</td>
-            <td class="table-actions">
-                <button class="btn-icon edit" onclick="editarRegistro(${r.id})" title="Editar"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-                <button class="btn-icon delete" onclick="confirmarExclusao(${r.id})" title="Excluir"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
-            </td>
-        </tr>
-    `).join('');
-    
-    document.getElementById('showing-count').textContent = recent.length;
-    document.getElementById('total-count').textContent = registros.length;
+    // Mantido por compatibilidade
+    loadDashboardCharts();
 }
 
-function renderRegistros(page = 1) {
-    const tbody = document.getElementById('tbody-registros');
-    
-    // Aplicar filtros
+function getFilteredRegistros() {
     let filtered = [...registros];
-    
+
     const setorFilter = document.getElementById('filter-setor').value;
     const dataInicio = document.getElementById('filter-data-inicio').value;
     const dataFim = document.getElementById('filter-data-fim').value;
     const servidorFilter = document.getElementById('filter-servidor').value.toLowerCase();
-    
+
     if (setorFilter) {
         filtered = filtered.filter(r => r.setor === setorFilter);
     }
@@ -430,11 +389,20 @@ function renderRegistros(page = 1) {
         filtered = filtered.filter(r => r.dia_trabalhado <= dataFim);
     }
     if (servidorFilter) {
-        filtered = filtered.filter(r => 
-            r.nf.toLowerCase().includes(servidorFilter) || 
-            (r.nome && r.nome.toLowerCase().includes(servidorFilter))
+        filtered = filtered.filter(r =>
+            String(r.nf).toLowerCase().includes(servidorFilter) ||
+            String(r.nome || '').toLowerCase().includes(servidorFilter)
         );
     }
+
+    return filtered;
+}
+
+function renderRegistros(page = 1) {
+    const tbody = document.getElementById('tbody-registros');
+    
+    // Aplicar filtros
+    let filtered = getFilteredRegistros();
     
     // Ordenar por data decrescente
     filtered.sort((a, b) => new Date(b.dia_trabalhado) - new Date(a.dia_trabalhado));
@@ -482,11 +450,91 @@ function renderRegistros(page = 1) {
     
     document.getElementById('reg-showing').textContent = paginated.length;
     document.getElementById('reg-total').textContent = total;
-    
+
+    renderRegistrosResumo(filtered);
+
     renderPagination('pagination-registros', page, totalPages, (p) => {
         currentPage = p;
         renderRegistros(p);
     });
+}
+
+
+function renderRegistrosResumo(filteredRegs = []) {
+    const tbody = document.getElementById('tbody-registros-resumo');
+    if (!tbody) return;
+
+    const mapa = new Map();
+    filteredRegs.forEach(r => {
+        const key = r.nf;
+        if (!mapa.has(key)) {
+            mapa.set(key, {
+                nf: r.nf,
+                nome: r.nome || '-',
+                setor: r.setor || '-',
+                registros: 0,
+                direito: [],
+                gozadas: []
+            });
+        }
+        const item = mapa.get(key);
+        item.registros += 1;
+        item.direito.push(r.h_direito || '00:00');
+        item.gozadas.push(r.horas_descontadas || '00:00');
+    });
+
+    const rows = Array.from(mapa.values()).map(i => {
+        const totalDireito = somarHoras(i.direito);
+        const totalGozadas = somarHoras(i.gozadas);
+
+        const [hd, md] = totalDireito.split(':').map(Number);
+        const [hg, mg] = totalGozadas.split(':').map(Number);
+        const saldoMin = (hd * 60 + md) - (hg * 60 + mg);
+        const saldo = `${saldoMin < 0 ? '-' : ''}${String(Math.floor(Math.abs(saldoMin) / 60)).padStart(2, '0')}:${String(Math.abs(saldoMin) % 60).padStart(2, '0')}`;
+
+        return `
+            <tr>
+                <td class="cell-nf">${i.nf}</td>
+                <td class="cell-name">${i.nome}</td>
+                <td><span class="cell-setor">${i.setor}</span></td>
+                <td>${i.registros}</td>
+                <td><span class="cell-hours neutral">${totalDireito}</span></td>
+                <td><span class="cell-hours negative">${totalGozadas}</span></td>
+                <td><span class="cell-hours ${getSaldoClass(saldo)}">${saldo}</span></td>
+            </tr>
+        `;
+    });
+
+    tbody.innerHTML = rows.length ? rows.join('') : `
+        <tr><td colspan="7" class="text-center" style="padding: 1.5rem;">Sem dados para o resumo aglutinado.</td></tr>
+    `;
+}
+
+async function loadDashboardCharts() {
+    const chartHoras = document.getElementById('chart-horas-mes');
+    const chartSetor = document.getElementById('chart-saldo-setor');
+    const chartTop = document.getElementById('chart-top-servidores');
+    if (!chartHoras || !chartSetor || !chartTop) return;
+
+    const setor = document.getElementById('dash-filter-setor')?.value || '';
+    const startMonth = document.getElementById('dash-filter-start-month')?.value || '';
+    const endMonth = document.getElementById('dash-filter-end-month')?.value || '';
+
+    const params = new URLSearchParams();
+    if (setor) params.append('setor', setor);
+    if (startMonth) params.append('startMonth', startMonth);
+    if (endMonth) params.append('endMonth', endMonth);
+
+    try {
+        const data = await API.get(`/api/dashboard/charts?${params.toString()}`);
+        chartHoras.src = data.horasMes;
+        chartSetor.src = data.saldoSetor;
+        chartTop.src = data.topServidores;
+    } catch (error) {
+        chartHoras.removeAttribute('src');
+        chartSetor.removeAttribute('src');
+        chartTop.removeAttribute('src');
+    }
 }
 
 function renderServidores(page = 1) {
@@ -907,8 +955,8 @@ function navigateTo(pageId) {
     // Atualizar título
     const titles = {
         dashboard: 'Dashboard',
-        consulta: 'Consulta por Servidor',
-        registros: 'Dias Trabalhados',
+        consulta: 'Consulta Rápida',
+        registros: 'Registros',
         servidores: 'Servidores',
         calendario: 'Calendário de Prazos',
         backup: 'Backup & Restauração'
@@ -1406,6 +1454,9 @@ function initApp() {
     });
     
     
+    // Filtros do dashboard analítico
+    document.getElementById('btn-dash-aplicar')?.addEventListener('click', loadDashboardCharts);
+
     // Global search
     document.getElementById('global-search').addEventListener('keypress', function(e) {
         if (e.key === 'Enter' && this.value) {
