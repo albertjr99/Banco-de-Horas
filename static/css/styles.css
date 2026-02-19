@@ -1260,3 +1260,65 @@ input::placeholder, textarea::placeholder { color: #94a3b8 !important; }
     opacity: .95;
     color: #dbeafe !important;
 }
+
+/* ===================================
+   CALENDÁRIO - visibilidade reforçada
+   =================================== */
+.calendario-title {
+    color: #f8fafc !important;
+    font-size: 30px;
+    font-weight: 800;
+    letter-spacing: .4px;
+    text-shadow: 0 4px 20px rgba(14,165,233,.35);
+}
+
+.calendario-grid {
+    border: 1px solid rgba(191, 219, 254, .45) !important;
+}
+
+.weekday {
+    color: #eff6ff;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.calendar-day {
+    background: rgba(30, 41, 59, .78) !important;
+}
+
+.calendar-day.today {
+    background: rgba(59, 130, 246, .18) !important;
+    outline: 1px solid rgba(147,197,253,.45);
+}
+
+.day-number {
+    color: #f8fafc !important;
+    font-size: 22px;
+    font-weight: 700;
+}
+
+.calendar-day.other-month .day-number {
+    color: #94a3b8 !important;
+}
+
+.day-events {
+    gap: 6px;
+}
+
+.day-event {
+    font-size: 12px !important;
+    line-height: 1.35;
+    border-radius: 8px;
+    padding: 6px 8px;
+    color: #fff7ed !important;
+    background: linear-gradient(135deg, rgba(245,158,11,.55), rgba(249,115,22,.48)) !important;
+    border-left: 3px solid #f59e0b !important;
+    text-transform: none;
+    font-weight: 700;
+}
+
+.notification-time,
+.alerta-prazo,
+.alerta-nf {
+    color: #dbeafe !important;
+}
