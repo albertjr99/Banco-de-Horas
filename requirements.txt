@@ -4,5 +4,4 @@ Flask-Cors==4.0.0
 gunicorn==21.2.0
 openpyxl==3.1.2
 APScheduler==3.10.4
-matplotlib==3.9.2
 python-dateutil==2.9.0.post0
