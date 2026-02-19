@@ -124,7 +124,12 @@
                         Calendário
                         
                     </a>
-                </div>
+
+                    <a href="#" class="nav-item hidden" data-page="admin" id="nav-admin">
+                        <i data-lucide="shield-check" class="icon"></i>
+                        Administração
+                    </a>
+                </div
             </nav>
 
             <div class="sidebar-footer">
@@ -537,6 +542,35 @@
                             <div class="pagination" id="pagination-servidores">
                                 <!-- Paginação via JavaScript -->
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+
+                <!-- Admin Page -->
+                <div id="page-admin" class="page hidden">
+                    <div class="data-section">
+                        <div class="data-header">
+                            <h2 class="data-title">Portal do Administrador</h2>
+                        </div>
+                        <div class="filters-row">
+                            <div class="filter-group" style="min-width:240px;">
+                                <label>Usuário para token:</label>
+                                <select class="filter-select" id="admin-token-user"></select>
+                            </div>
+                            <button class="btn btn-primary" id="btn-admin-gerar-token">Gerar Token de Redefinição</button>
+                        </div>
+                        <div class="form-group" style="margin: 12px 0 18px;">
+                            <label>Token Gerado</label>
+                            <input type="text" id="admin-token-result" readonly class="readonly-field" placeholder="Clique em gerar token...">
+                        </div>
+                        <div class="data-table-wrapper">
+                            <table class="data-table">
+                                <thead>
+                                    <tr><th>Usuário</th><th>Perfil</th><th>E-mail</th><th>Status</th></tr>
+                                </thead>
+                                <tbody id="tbody-admin-users"></tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
