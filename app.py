@@ -466,6 +466,9 @@ def auth_login():
     username = (data.get('username') or '').strip()
     password = data.get('password') or ''
 
+    # Garantir usuários iniciais (útil em ambiente WSGI/deploy)
+    semear_usuarios_iniciais()
+
     user = UsuarioSistema.query.filter_by(username=username, ativo=True).first()
     if not user or not user.check_password(password):
         return jsonify({'error': 'Usuário ou senha inválidos'}), 401
@@ -483,6 +486,9 @@ def auth_reset_password():
     username = (data.get('username') or '').strip()
     token = (data.get('token') or '').strip()
     nova_senha = (data.get('new_password') or '').strip()
+
+    # Garantir usuários iniciais (útil em ambiente WSGI/deploy)
+    semear_usuarios_iniciais()
 
     user = UsuarioSistema.query.filter_by(username=username, ativo=True).first()
     if not user:
@@ -518,6 +524,9 @@ def admin_generate_token():
         return jsonify({'error': 'Acesso negado'}), 403
 
     username = (data.get('username') or '').strip()
+    # Garantir usuários iniciais (útil em ambiente WSGI/deploy)
+    semear_usuarios_iniciais()
+
     user = UsuarioSistema.query.filter_by(username=username, ativo=True).first()
     if not user:
         return jsonify({'error': 'Usuário não encontrado'}), 404
@@ -992,6 +1001,16 @@ def inicializar_app():
         criar_backup()
         print("Backup inicial criado!")
 
+
+def bootstrap_sistema():
+    """Bootstrap para ambientes WSGI (ex.: PythonAnywhere)"""
+    with app.app_context():
+        db.create_all()
+        semear_usuarios_iniciais()
+
+
+# Executar bootstrap também quando módulo é importado
+bootstrap_sistema()
 
 if __name__ == '__main__':
     # Inicializar banco de dados
