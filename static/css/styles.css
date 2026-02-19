@@ -1445,4 +1445,11 @@ input::placeholder, textarea::placeholder { color: #94a3b8 !important; }
 }
 .btn-icon.view:hover { background: rgba(14,165,233,.28); }
 
+/* Ajustes finais de unidade e admin */
+.cell-hours,
+.stat-value,
+.servidor-stat .value {
+    white-space: nowrap;
+}
 
+#nav-admin.hidden { display: none !important; }
