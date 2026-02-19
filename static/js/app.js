@@ -324,6 +324,7 @@ let setores = new Set();
 let currentPage = 1;
 const perPage = 20;
 let dashboardCharts = { horasMes: null, saldoSetor: null, topServidores: null };
+let dashboardLastData = null;
 
 // ===================================
 // Data Loading
@@ -383,11 +384,14 @@ function populateSetorFilters() {
 }
 
 function populateServidorSelects() {
-    const selects = ['consulta-select', 'reg-servidor'];
+    const selects = ['consulta-select', 'reg-servidor', 'dash-filter-servidor'];
     selects.forEach(id => {
         const select = document.getElementById(id);
         if (select) {
-            select.innerHTML = '<option value="">Selecione um servidor...</option>';
+            const defaultOption = id === 'dash-filter-servidor'
+                ? '<option value="">Todos</option>'
+                : '<option value="">Selecione um servidor...</option>';
+            select.innerHTML = defaultOption;
             servidores.sort((a, b) => a.nome.localeCompare(b.nome)).forEach(srv => {
                 select.innerHTML += `<option value="${srv.nf}">${srv.nome} (${srv.nf})</option>`;
             });
@@ -570,27 +574,40 @@ function renderRegistrosResumo(filteredRegs = []) {
     `;
 }
 
-async function loadDashboardCharts() {
-    if (typeof Chart === 'undefined') return;
-
-    const canvasHoras = document.getElementById('chart-horas-mes');
-    const canvasSetor = document.getElementById('chart-saldo-setor');
-    const canvasTop = document.getElementById('chart-top-servidores');
-    if (!canvasHoras || !canvasSetor || !canvasTop) return;
-
+function getDashboardFilterContext() {
+    const filterType = document.getElementById('dash-filter-type')?.value || 'todos';
     const setor = document.getElementById('dash-filter-setor')?.value || '';
+    const servidor = document.getElementById('dash-filter-servidor')?.value || '';
     const startMonth = document.getElementById('dash-filter-start-month')?.value || '';
     const endMonth = document.getElementById('dash-filter-end-month')?.value || '';
+    return { filterType, setor, servidor, startMonth, endMonth };
+}
 
+function formatFilterDescription(ctx) {
+    const filtros = [];
+    if (ctx.filterType === 'setor' && ctx.setor) filtros.push(`Setor: ${ctx.setor}`);
+    if (ctx.filterType === 'servidor' && ctx.servidor) {
+        const srv = servidores.find(s => s.nf === ctx.servidor);
+        filtros.push(`Servidor: ${srv ? `${srv.nome} (${srv.nf})` : ctx.servidor}`);
+    }
+    if (ctx.startMonth) filtros.push(`De: ${ctx.startMonth}`);
+    if (ctx.endMonth) filtros.push(`Até: ${ctx.endMonth}`);
+    return filtros.length ? filtros.join(' | ') : 'Visão geral (todos os dados)';
+}
+
+function computeDashboardData() {
+    const ctx = getDashboardFilterContext();
     const filtered = registros.filter(r => {
-        if (setor && r.setor !== setor) return false;
+        if (ctx.filterType === 'setor' && ctx.setor && r.setor !== ctx.setor) return false;
+        if (ctx.filterType === 'servidor' && ctx.servidor && r.nf !== ctx.servidor) return false;
+
         const d = r.dia_trabalhado ? new Date(r.dia_trabalhado) : null;
-        if (startMonth && d) {
-            const start = new Date(`${startMonth}-01T00:00:00`);
+        if (ctx.startMonth && d) {
+            const start = new Date(`${ctx.startMonth}-01T00:00:00`);
             if (d < start) return false;
         }
-        if (endMonth && d) {
-            const end = new Date(`${endMonth}-01T00:00:00`);
+        if (ctx.endMonth && d) {
+            const end = new Date(`${ctx.endMonth}-01T00:00:00`);
             end.setMonth(end.getMonth() + 1);
             if (d >= end) return false;
         }
@@ -619,22 +636,156 @@ async function loadDashboardCharts() {
     const dadosDireito = labelsMes.map(m => +(porMes.get(m).direito / 60).toFixed(2));
     const dadosDescontadas = labelsMes.map(m => +(porMes.get(m).descontadas / 60).toFixed(2));
 
-    const setores = Array.from(porSetor.entries()).sort((a,b)=>b[1]-a[1]).slice(0, 10);
-    const labelsSetor = setores.map(([k]) => k);
-    const dadosSetor = setores.map(([,v]) => +(v / 60).toFixed(2));
+    const setoresRank = Array.from(porSetor.entries()).sort((a, b) => b[1] - a[1]).slice(0, 10);
+    const labelsSetor = setoresRank.map(([k]) => k);
+    const dadosSetor = setoresRank.map(([, v]) => +(v / 60).toFixed(2));
 
-    const tops = Array.from(porServidor.entries()).sort((a,b)=>b[1]-a[1]).slice(0, 10);
+    const tops = Array.from(porServidor.entries()).sort((a, b) => b[1] - a[1]).slice(0, 10);
     const labelsTop = tops.map(([k]) => k);
-    const dadosTop = tops.map(([,v]) => +(v / 60).toFixed(2));
+    const dadosTop = tops.map(([, v]) => +(v / 60).toFixed(2));
 
-    const allLine = [...dadosTrab, ...dadosDireito, ...dadosDescontadas];
+    const totalTrabalhadas = filtered.reduce((acc, r) => acc + timeToMinutes(r.h_trabalhada || '00:00'), 0);
+    const totalDireito = filtered.reduce((acc, r) => acc + timeToMinutes(r.h_direito || '00:00'), 0);
+    const totalDescontadas = filtered.reduce((acc, r) => acc + timeToMinutes(r.horas_descontadas || '00:00'), 0);
+    const saldoMinutos = totalDireito - totalDescontadas;
+
+    return {
+        ctx,
+        filtered,
+        labelsMes,
+        dadosTrab,
+        dadosDireito,
+        dadosDescontadas,
+        labelsSetor,
+        dadosSetor,
+        labelsTop,
+        dadosTop,
+        totalTrabalhadas,
+        totalDireito,
+        totalDescontadas,
+        saldoMinutos
+    };
+}
+
+function minutesToHourLabel(minutes = 0) {
+    const signal = minutes < 0 ? '-' : '';
+    const abs = Math.abs(minutes);
+    return `${signal}${String(Math.floor(abs / 60)).padStart(2, '0')}:${String(abs % 60).padStart(2, '0')}h`;
+}
+
+function buildDashboardInsights(data) {
+    const insights = [];
+    const saldoHoras = data.saldoMinutos / 60;
+    insights.push(`Saldo consolidado do período: <strong>${minutesToHourLabel(data.saldoMinutos)}</strong> (${saldoHoras.toFixed(2)}h).`);
+
+    if (data.labelsMes.length) {
+        const bestMonthIndex = data.dadosDireito.indexOf(Math.max(...data.dadosDireito));
+        const criticalMonthIndex = data.dadosDescontadas.indexOf(Math.max(...data.dadosDescontadas));
+        if (bestMonthIndex >= 0) insights.push(`Maior geração de direito em <strong>${data.labelsMes[bestMonthIndex]}</strong>, com ${data.dadosDireito[bestMonthIndex].toFixed(2)}h.`);
+        if (criticalMonthIndex >= 0) insights.push(`Maior consumo de folgas/descontos em <strong>${data.labelsMes[criticalMonthIndex]}</strong>, com ${data.dadosDescontadas[criticalMonthIndex].toFixed(2)}h.`);
+    }
+
+    if (data.labelsSetor.length) {
+        insights.push(`Setor com melhor saldo: <strong>${data.labelsSetor[0]}</strong> (${data.dadosSetor[0].toFixed(2)}h).`);
+    }
+
+    if (data.labelsTop.length) {
+        insights.push(`Servidor com maior saldo: <strong>${data.labelsTop[0]}</strong> (${data.dadosTop[0].toFixed(2)}h).`);
+    }
+
+    const produtividade = data.totalTrabalhadas ? (data.totalDireito / data.totalTrabalhadas) : 0;
+    insights.push(`Índice de conversão trabalhada→direito: <strong>${produtividade.toFixed(2)}x</strong>.`);
+
+    return insights;
+}
+
+function updateDashboardFilterFields() {
+    const type = document.getElementById('dash-filter-type')?.value || 'todos';
+    const setorGroup = document.getElementById('dash-filter-setor')?.closest('.filter-group');
+    const servidorGroup = document.getElementById('dash-filter-servidor')?.closest('.filter-group');
+    if (setorGroup) setorGroup.style.display = type === 'servidor' ? 'none' : 'flex';
+    if (servidorGroup) servidorGroup.style.display = type === 'setor' ? 'none' : 'flex';
+}
+
+async function exportDashboardReportPDF() {
+    if (!dashboardLastData) loadDashboardCharts();
+    const data = dashboardLastData;
+    if (!data || !data.filtered.length) {
+        showToast('error', 'Sem dados', 'Não há dados para exportar com os filtros selecionados.');
+        return;
+    }
+
+    const chartIds = ['chart-horas-mes', 'chart-saldo-setor', 'chart-top-servidores'];
+    const images = chartIds.map(id => {
+        const canvas = document.getElementById(id);
+        return canvas ? canvas.toDataURL('image/png', 1) : null;
+    });
+
+    const insights = buildDashboardInsights(data).map(item => `<li>${item}</li>`).join('');
+    const now = new Date();
+    const reportHtml = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><title>Relatório Gerencial</title>
+    <style>
+        @page { size: A4 portrait; margin: 16mm; }
+        body { font-family: Inter, Arial, sans-serif; color:#0f172a; margin:0; }
+        .report { max-width: 100%; }
+        .header { background: linear-gradient(135deg, #1d4ed8, #0f172a); color:white; padding:20px; border-radius:14px; }
+        h1 { margin:0 0 8px 0; font-size:24px; }
+        .meta { font-size:12px; opacity:.9; }
+        .kpis { display:grid; grid-template-columns: repeat(4, 1fr); gap:10px; margin:16px 0; }
+        .kpi { border:1px solid #dbeafe; border-radius:10px; padding:12px; background:#f8fbff; }
+        .kpi h3 { margin:0; font-size:12px; color:#475569; font-weight:600; }
+        .kpi p { margin:8px 0 0; font-size:18px; font-weight:700; color:#0f172a; }
+        .section { margin-top:18px; }
+        .section h2 { margin:0 0 10px; font-size:16px; }
+        .chart { margin-bottom:16px; border:1px solid #e2e8f0; border-radius:12px; padding:10px; background:white; }
+        .chart img { width:100%; border-radius:8px; }
+        ul { margin:0; padding-left:18px; line-height:1.45; }
+        .footer { margin-top:14px; font-size:11px; color:#64748b; text-align:right; }
+    </style></head><body><div class="report">
+    <div class="header"><h1>Relatório Gerencial • Banco de Horas</h1><div class="meta">${formatFilterDescription(data.ctx)}<br>Emitido em: ${now.toLocaleString('pt-BR')}</div></div>
+    <div class="kpis">
+      <div class="kpi"><h3>Registros</h3><p>${data.filtered.length}</p></div>
+      <div class="kpi"><h3>Horas trabalhadas</h3><p>${minutesToHourLabel(data.totalTrabalhadas)}</p></div>
+      <div class="kpi"><h3>Horas de direito</h3><p>${minutesToHourLabel(data.totalDireito)}</p></div>
+      <div class="kpi"><h3>Saldo</h3><p>${minutesToHourLabel(data.saldoMinutos)}</p></div>
+    </div>
+    <div class="section"><h2>Interpretação automatizada</h2><ul>${insights}</ul></div>
+    <div class="section"><h2>Gráficos gerenciais</h2>
+        ${images[0] ? `<div class="chart"><strong>Horas por mês</strong><img src="${images[0]}"/></div>` : ''}
+        ${images[1] ? `<div class="chart"><strong>Saldo por setor</strong><img src="${images[1]}"/></div>` : ''}
+        ${images[2] ? `<div class="chart"><strong>Top 10 servidores por saldo</strong><img src="${images[2]}"/></div>` : ''}
+    </div>
+    <div class="footer">Relatório gerado automaticamente pelo painel analítico.</div>
+    </div><script>window.onload = () => { setTimeout(() => { window.print(); }, 350); };</script></body></html>`;
+
+    const win = window.open('', '_blank');
+    if (!win) {
+        showToast('error', 'Popup bloqueado', 'Permita popups para exportar o relatório em PDF.');
+        return;
+    }
+    win.document.write(reportHtml);
+    win.document.close();
+}
+
+async function loadDashboardCharts() {
+    if (typeof Chart === 'undefined') return;
+
+    const canvasHoras = document.getElementById('chart-horas-mes');
+    const canvasSetor = document.getElementById('chart-saldo-setor');
+    const canvasTop = document.getElementById('chart-top-servidores');
+    if (!canvasHoras || !canvasSetor || !canvasTop) return;
+
+    const data = computeDashboardData();
+    dashboardLastData = data;
+
+    const allLine = [...data.dadosTrab, ...data.dadosDireito, ...data.dadosDescontadas];
     const minLine = allLine.length ? Math.min(...allLine) : 0;
     const maxLine = allLine.length ? Math.max(...allLine) : 0;
-    const minSetor = dadosSetor.length ? Math.min(...dadosSetor) : 0;
-    const maxSetor = dadosSetor.length ? Math.max(...dadosSetor) : 0;
+    const minSetor = data.dadosSetor.length ? Math.min(...data.dadosSetor) : 0;
+    const maxSetor = data.dadosSetor.length ? Math.max(...data.dadosSetor) : 0;
 
     const tooltipLabel = (ctx, arr) => {
-        const raw = ctx.parsed;
+        const raw = ctx.raw;
         const value = typeof raw === 'number' ? raw : (raw.x ?? raw.y ?? 0);
         const total = arr.reduce((acc, v) => acc + Math.abs(v), 0) || 1;
         const pct = (Math.abs(value) / total) * 100;
@@ -647,92 +798,26 @@ async function loadDashboardCharts() {
     dashboardCharts.horasMes = new Chart(canvasHoras, {
         type: 'line',
         data: {
-            labels: labelsMes,
+            labels: data.labelsMes,
             datasets: [
-                { label: 'Horas Trabalhadas', data: dadosTrab, borderColor: '#38bdf8', backgroundColor: '#38bdf833', pointRadius: 4, pointHoverRadius: 7, tension: 0.33 },
-                { label: 'Horas de Direito', data: dadosDireito, borderColor: '#22c55e', backgroundColor: '#22c55e33', pointRadius: 4, pointHoverRadius: 7, tension: 0.33 },
-                { label: 'Horas Descontadas', data: dadosDescontadas, borderColor: '#f59e0b', backgroundColor: '#f59e0b33', pointRadius: 4, pointHoverRadius: 7, tension: 0.33 }
+                { label: 'Horas Trabalhadas', data: data.dadosTrab, borderColor: '#38bdf8', backgroundColor: '#38bdf833', pointRadius: 4, pointHoverRadius: 7, tension: 0.33 },
+                { label: 'Horas de Direito', data: data.dadosDireito, borderColor: '#22c55e', backgroundColor: '#22c55e33', pointRadius: 4, pointHoverRadius: 7, tension: 0.33 },
+                { label: 'Horas Descontadas', data: data.dadosDescontadas, borderColor: '#f59e0b', backgroundColor: '#f59e0b33', pointRadius: 4, pointHoverRadius: 7, tension: 0.33 }
             ]
         },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            animation: { duration: 350, easing: 'easeOutCubic' },
-            interaction: { mode: 'nearest', intersect: false },
-            plugins: {
-                legend: { labels: { color: '#e2e8f0' } },
-                tooltip: {
-                    backgroundColor: '#0f172a',
-                    borderColor: '#334155',
-                    borderWidth: 1,
-                    callbacks: {
-                        label: (ctx) => tooltipLabel(ctx, allLine),
-                        footer: () => [`Mínimo: ${minLine.toFixed(2)} H`, `Máximo: ${maxLine.toFixed(2)} H`]
-                    }
-                }
-            },
-            scales: {
-                x: { ticks: { color: '#cbd5e1' }, grid: { color: '#33415566' } },
-                y: { ticks: { color: '#cbd5e1', callback: (v) => `${v} H` }, grid: { color: '#33415566' } }
-            }
-        }
+        options: { responsive: true, maintainAspectRatio: false, animation: { duration: 350, easing: 'easeOutCubic' }, interaction: { mode: 'nearest', intersect: false }, plugins: { legend: { labels: { color: '#e2e8f0' } }, tooltip: { backgroundColor: '#0f172a', borderColor: '#334155', borderWidth: 1, callbacks: { label: (ctx) => tooltipLabel(ctx, allLine), footer: () => [`Mínimo: ${minLine.toFixed(2)} H`, `Máximo: ${maxLine.toFixed(2)} H`] } } }, scales: { x: { ticks: { color: '#cbd5e1' }, grid: { color: '#33415566' } }, y: { ticks: { color: '#cbd5e1', callback: (v) => `${v} H` }, grid: { color: '#33415566' } } } }
     });
 
     dashboardCharts.saldoSetor = new Chart(canvasSetor, {
         type: 'bar',
-        data: {
-            labels: labelsSetor,
-            datasets: [{ label: 'Saldo', data: dadosSetor, backgroundColor: dadosSetor.map(v => v >= 0 ? '#22c55ed9' : '#ef4444d9'), borderRadius: 8 }]
-        },
-        options: {
-            indexAxis: 'y',
-            responsive: true,
-            maintainAspectRatio: false,
-            animation: { duration: 320, easing: 'easeOutQuart' },
-            interaction: { mode: 'nearest', intersect: true },
-            plugins: {
-                legend: { labels: { color: '#e2e8f0' } },
-                tooltip: {
-                    backgroundColor: '#0f172a',
-                    borderColor: '#334155',
-                    borderWidth: 1,
-                    callbacks: {
-                        label: (ctx) => tooltipLabel(ctx, dadosSetor),
-                        footer: () => [`Mínimo: ${minSetor.toFixed(2)} H`, `Máximo: ${maxSetor.toFixed(2)} H`]
-                    }
-                }
-            },
-            scales: {
-                x: { ticks: { color: '#cbd5e1', callback: (v) => `${v} H` }, grid: { color: '#33415555' } },
-                y: { ticks: { color: '#cbd5e1' }, grid: { color: '#33415522' } }
-            }
-        }
+        data: { labels: data.labelsSetor, datasets: [{ label: 'Saldo', data: data.dadosSetor, backgroundColor: data.dadosSetor.map(v => v >= 0 ? '#22c55ed9' : '#ef4444d9'), borderRadius: 8 }] },
+        options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, animation: { duration: 320, easing: 'easeOutQuart' }, interaction: { mode: 'nearest', intersect: true }, plugins: { legend: { labels: { color: '#e2e8f0' } }, tooltip: { backgroundColor: '#0f172a', borderColor: '#334155', borderWidth: 1, callbacks: { label: (ctx) => tooltipLabel(ctx, data.dadosSetor), footer: () => [`Mínimo: ${minSetor.toFixed(2)} H`, `Máximo: ${maxSetor.toFixed(2)} H`] } } }, scales: { x: { ticks: { color: '#cbd5e1', callback: (v) => `${v} H` }, grid: { color: '#33415555' } }, y: { ticks: { color: '#cbd5e1' }, grid: { color: '#33415522' } } } }
     });
 
     dashboardCharts.topServidores = new Chart(canvasTop, {
         type: 'bar',
-        data: { labels: labelsTop, datasets: [{ label: 'Saldo', data: dadosTop, backgroundColor: '#60a5fad9', borderRadius: 8 }] },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            animation: { duration: 320, easing: 'easeOutQuart' },
-            interaction: { mode: 'nearest', intersect: true },
-            plugins: {
-                legend: { labels: { color: '#e2e8f0' } },
-                tooltip: {
-                    backgroundColor: '#0f172a',
-                    borderColor: '#334155',
-                    borderWidth: 1,
-                    callbacks: {
-                        label: (ctx) => tooltipLabel(ctx, dadosTop)
-                    }
-                }
-            },
-            scales: {
-                x: { ticks: { color: '#cbd5e1', maxRotation: 25, minRotation: 25 }, grid: { color: '#33415522' } },
-                y: { ticks: { color: '#cbd5e1', callback: (v) => `${v} H` }, grid: { color: '#33415555' } }
-            }
-        }
+        data: { labels: data.labelsTop, datasets: [{ label: 'Saldo', data: data.dadosTop, backgroundColor: '#60a5fad9', borderRadius: 8 }] },
+        options: { responsive: true, maintainAspectRatio: false, animation: { duration: 320, easing: 'easeOutQuart' }, interaction: { mode: 'nearest', intersect: true }, plugins: { legend: { labels: { color: '#e2e8f0' } }, tooltip: { backgroundColor: '#0f172a', borderColor: '#334155', borderWidth: 1, callbacks: { label: (ctx) => tooltipLabel(ctx, data.dadosTop) } } }, scales: { x: { ticks: { color: '#cbd5e1', maxRotation: 25, minRotation: 25 }, grid: { color: '#33415522' } }, y: { ticks: { color: '#cbd5e1', callback: (v) => `${v} H` }, grid: { color: '#33415555' } } } }
     });
 }
 
@@ -1701,6 +1786,7 @@ function initApp() {
 
     // Inicializar visual moderno
     initModernUI();
+    updateDashboardFilterFields();
 
     const currentUserName = sessionStorage.getItem('userName') || 'Usuário';
     document.getElementById('user-name').textContent = currentUserName;
@@ -1831,7 +1917,13 @@ function initApp() {
     
     
     // Filtros do dashboard analítico
+    document.getElementById('dash-filter-type')?.addEventListener('change', () => { updateDashboardFilterFields(); loadDashboardCharts(); });
+    document.getElementById('dash-filter-setor')?.addEventListener('change', loadDashboardCharts);
+    document.getElementById('dash-filter-servidor')?.addEventListener('change', loadDashboardCharts);
+    document.getElementById('dash-filter-start-month')?.addEventListener('change', loadDashboardCharts);
+    document.getElementById('dash-filter-end-month')?.addEventListener('change', loadDashboardCharts);
     document.getElementById('btn-dash-aplicar')?.addEventListener('click', loadDashboardCharts);
+    document.getElementById('btn-exportar-dashboard-pdf')?.addEventListener('click', exportDashboardReportPDF);
 
     // Admin
     document.getElementById('btn-admin-gerar-token')?.addEventListener('click', gerarTokenAdmin);
