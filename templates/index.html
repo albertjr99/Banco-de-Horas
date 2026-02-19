@@ -85,7 +85,7 @@
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <div class="sidebar-logo">
-                    <div class="logo-icon">BH</div>
+                    <div class="logo-icon">SRH</div>
                     <div>
                         <h1>Banco de Horas</h1>
                         <span>SRH | IPAJM</span>
@@ -133,6 +133,10 @@
                         <div class="user-name" id="user-name">Thiago</div>
                         <div class="user-role">SRH | IPAJM</div>
                     </div>
+                    <button class="logout-btn" id="btn-logout" title="Sair do sistema">
+                        <i data-lucide="log-out"></i>
+                        <span>Sair</span>
+                    </button>
                 </div>
             </div>
         </aside>
@@ -522,15 +526,15 @@
                         <div class="calendario-legend">
                             <div class="legend-item">
                                 <span class="legend-dot urgent"></span>
-                                <span>Prazo vence em até 7 dias</span>
+                                <span>Prazo vence em até 7 dias (prioridade alta)</span>
                             </div>
                             <div class="legend-item">
                                 <span class="legend-dot warning"></span>
-                                <span>Prazo vence em 8-15 dias</span>
+                                <span>Prazo vence entre 8 e 30 dias</span>
                             </div>
                             <div class="legend-item">
                                 <span class="legend-dot normal"></span>
-                                <span>Prazo com mais de 15 dias</span>
+                                <span>Sem alerta (acima de 30 dias ou expirado)</span>
                             </div>
                         </div>
 
@@ -775,5 +779,3 @@
     <script src="/static/js/app.js"></script>
 </body>
 </html>
-
-
