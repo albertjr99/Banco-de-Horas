@@ -1051,3 +1051,137 @@ input::placeholder, textarea::placeholder { color: #94a3b8 !important; }
 .ui-float {
     transform: translateY(-3px) scale(1.01);
 }
+
+/* ===================================
+   UX REFINEMENT - requested adjustments
+   =================================== */
+.sidebar-logo .logo-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: linear-gradient(145deg, #0ea5e9, #2563eb);
+    box-shadow: 0 12px 20px rgba(37, 99, 235, 0.35), inset 0 1px 0 rgba(255,255,255,.35);
+    font-size: 14px;
+    letter-spacing: .6px;
+}
+
+.user-info {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 14px;
+    background: linear-gradient(145deg, rgba(30,41,59,.95), rgba(15,23,42,.9));
+    border: 1px solid rgba(148,163,184,.28);
+    box-shadow: 14px 14px 24px rgba(2,6,23,.45), -6px -6px 14px rgba(51,65,85,.28), inset 0 1px 0 rgba(255,255,255,.18);
+    transform-style: preserve-3d;
+}
+.user-info:hover { transform: perspective(600px) rotateX(3deg) translateY(-2px); }
+.user-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #0ea5e9, #1d4ed8);
+    box-shadow: 0 8px 16px rgba(14,165,233,.35);
+    font-size: 14px;
+}
+.user-name { font-size: 15px; font-weight: 700; }
+.user-role { font-size: 12px; color: #94a3b8 !important; }
+
+.logout-btn {
+    border: 1px solid rgba(248,250,252,.18);
+    background: rgba(15,23,42,.7);
+    color: #e2e8f0;
+    border-radius: 10px;
+    height: 34px;
+    padding: 0 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+}
+.logout-btn span { font-size: 12px; font-weight: 600; }
+.logout-btn:hover { background: rgba(239,68,68,.15); border-color: rgba(248,113,113,.45); color: #fecaca; }
+
+.login-card {
+    background: linear-gradient(155deg, rgba(15,23,42,.82), rgba(30,41,59,.7));
+    border: 1px solid rgba(125, 211, 252, 0.35);
+    box-shadow: 0 30px 70px rgba(2,6,23,.55), inset 0 1px 0 rgba(255,255,255,.2);
+}
+.login-title, .login-subtitle { color: #e2e8f0 !important; }
+.login-logo-icon {
+    background: linear-gradient(135deg, #06b6d4, #2563eb);
+    box-shadow: 0 14px 28px rgba(37,99,235,.45), inset 0 1px 0 rgba(255,255,255,.45);
+}
+.login-form .input-with-icon input {
+    border: 1px solid rgba(125,211,252,.35);
+    background: rgba(15,23,42,.65) !important;
+    color: #f8fafc !important;
+}
+
+.data-table {
+    font-size: 14px;
+    border-spacing: 0;
+}
+.data-table thead {
+    background: rgba(30,41,59,.95) !important;
+}
+.data-table th {
+    color: #dbeafe !important;
+    font-size: 12px;
+    letter-spacing: .8px;
+    border-bottom: 1px solid rgba(148,163,184,.32);
+}
+.data-table td {
+    color: #e2e8f0 !important;
+    border-bottom: 1px solid rgba(148,163,184,.24) !important;
+    font-size: 14px;
+    font-weight: 500;
+}
+.data-table tbody tr:nth-child(odd) { background: rgba(15,23,42,.32); }
+.data-table tbody tr:nth-child(even) { background: rgba(30,41,59,.24); }
+.data-table tbody tr:hover { background: rgba(14,165,233,.14) !important; }
+
+.cell-nf, .cell-date, .cell-time, .cell-hours, .saldo-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px !important;
+    letter-spacing: .3px;
+}
+.cell-hours {
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-weight: 700;
+}
+
+.calendario-container,
+.alertas-section {
+    background: linear-gradient(145deg, rgba(15,23,42,.9), rgba(30,41,59,.8)) !important;
+    border: 1px solid rgba(125,211,252,.28) !important;
+    box-shadow: 0 20px 40px rgba(2,6,23,.35);
+}
+.calendario-legend {
+    background: rgba(15,23,42,.5);
+    border: 1px solid rgba(148,163,184,.24);
+}
+.legend-item { color: #cbd5e1; font-size: 13px; }
+.calendario-weekdays {
+    background: linear-gradient(120deg, #1d4ed8, #0f172a);
+}
+.calendar-day {
+    min-height: 112px;
+    background: rgba(15,23,42,.52);
+    border-right: 1px solid rgba(148,163,184,.2);
+    border-bottom: 1px solid rgba(148,163,184,.2);
+}
+.calendar-day:hover { background: rgba(14,165,233,.12); }
+.calendar-day.other-month { background: rgba(15,23,42,.32); }
+.day-number { color: #e2e8f0; font-size: 14px; }
+.day-event {
+    font-size: 11px;
+    padding: 4px 7px;
+    border-radius: 6px;
+    font-weight: 600;
+}
+.day-event.warning { background: rgba(245,158,11,.2); color: #fde68a; border-left-color: #f59e0b; }
+.day-event.urgent { background: rgba(239,68,68,.22); color: #fecaca; border-left-color: #ef4444; }
