@@ -102,7 +102,7 @@
                     </a>
                     <a href="#" class="nav-item" data-page="consulta">
                         <i data-lucide="search" class="icon"></i>
-                        Consulta
+                        Consulta Rápida
                     </a>
                 </div>
 
@@ -110,7 +110,7 @@
                     <div class="nav-section-title">Gestão</div>
                     <a href="#" class="nav-item" data-page="registros">
                         <i data-lucide="calendar-clock" class="icon"></i>
-                        Dias Trabalhados
+                        Registros
                         <span class="badge" id="badge-registros">0</span>
                     </a>
                     <a href="#" class="nav-item" data-page="servidores">
@@ -251,46 +251,48 @@
                         </div>
                     </div>
 
-                    <!-- Recent Records -->
-                    <div class="data-section">
+                    <!-- Analytics Dashboard -->
+                    <div class="data-section dashboard-analytics">
                         <div class="data-header">
-                            <h2 class="data-title">Últimos Registros</h2>
+                            <h2 class="data-title">Análises do Banco de Horas</h2>
                             <div class="data-actions">
                                 <button class="btn btn-primary" id="btn-novo-registro">
                                     <i data-lucide="plus"></i> Novo Registro
                                 </button>
                             </div>
                         </div>
-                        <div class="data-table-wrapper">
-                            <table class="data-table" id="table-recentes">
-                                <thead>
-                                    <tr>
-                                        <th>NF</th>
-                                        <th>Nome</th>
-                                        <th>Setor</th>
-                                        <th>Data</th>
-                                        <th>Entrada</th>
-                                        <th>Saída</th>
-                                        <th>H. Trab.</th>
-                                        <th>H. Direito</th>
-                                        <th>Prazo Máx.</th>
-                                        <th>Dias Gozados</th>
-                                        <th>H. Descontadas</th>
-                                        <th>Saldo</th>
-                                        <th>Observação</th>
-                                        <th>Ações</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tbody-recentes">
-                                    <!-- Dados carregados via JavaScript -->
-                                </tbody>
-                            </table>
-                        </div>
-                        <div class="data-footer">
-                            <div class="pagination-info">
-                                Mostrando <strong id="showing-count">0</strong> de <strong id="total-count">0</strong> registros
+
+                        <div class="filters-row dashboard-filters-row">
+                            <div class="filter-group">
+                                <label>Setor:</label>
+                                <select class="filter-select" id="dash-filter-setor">
+                                    <option value="">Todos</option>
+                                </select>
                             </div>
-                            <a href="#" class="btn btn-secondary" data-page="registros">Ver todos ›</a>
+                            <div class="filter-group">
+                                <label>De:</label>
+                                <input type="month" class="filter-input" id="dash-filter-start-month">
+                            </div>
+                            <div class="filter-group">
+                                <label>Até:</label>
+                                <input type="month" class="filter-input" id="dash-filter-end-month">
+                            </div>
+                            <button class="btn btn-sm btn-secondary" id="btn-dash-aplicar">Atualizar Análises</button>
+                        </div>
+
+                        <div class="dashboard-charts-grid">
+                            <div class="chart-card">
+                                <h3>Horas por Mês</h3>
+                                <img id="chart-horas-mes" alt="Gráfico de horas por mês" />
+                            </div>
+                            <div class="chart-card">
+                                <h3>Saldo por Setor</h3>
+                                <img id="chart-saldo-setor" alt="Gráfico de saldo por setor" />
+                            </div>
+                            <div class="chart-card chart-card-wide">
+                                <h3>Top 10 Servidores por Saldo</h3>
+                                <img id="chart-top-servidores" alt="Gráfico top servidores por saldo" />
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -396,7 +398,7 @@
                 <div id="page-registros" class="page hidden">
                     <div class="data-section">
                         <div class="data-header">
-                            <h2 class="data-title">Todos os Dias Trabalhados</h2>
+                            <h2 class="data-title">Registros de Dias Trabalhados</h2>
                             <div class="data-actions">
                                 <button class="btn btn-primary" id="btn-novo-registro-page">
                                     <i data-lucide="plus"></i> Novo Registro
@@ -456,6 +458,28 @@
                             </div>
                         </div>
                     </div>
+                        <div class="data-section resumo-registros-section">
+                            <div class="data-header">
+                                <h2 class="data-title">Resumo Aglutinado por Servidor</h2>
+                            </div>
+                            <div class="data-table-wrapper">
+                                <table class="data-table" id="table-registros-resumo">
+                                    <thead>
+                                        <tr>
+                                            <th>NF</th>
+                                            <th>Nome</th>
+                                            <th>Setor</th>
+                                            <th>Registros</th>
+                                            <th>H. Direito (Total)</th>
+                                            <th>H. Gozadas (Total)</th>
+                                            <th>Saldo (Total)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tbody-registros-resumo"></tbody>
+                                </table>
+                            </div>
+                        </div>
+
                 </div>
 
                 <!-- Servidores Page -->
