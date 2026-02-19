@@ -14,6 +14,31 @@ function initLogin() {
     const loginForm = document.getElementById('login-form');
     const loginError = document.getElementById('login-error');
 
+    const resetForm = document.getElementById('reset-form');
+    const resetError = document.getElementById('reset-error');
+    const btnOpenReset = document.getElementById('btn-open-reset');
+    const btnBackLogin = document.getElementById('btn-back-login');
+
+    const showResetMode = () => {
+        loginForm.style.display = 'none';
+        resetForm.style.display = 'block';
+    };
+    const showLoginMode = () => {
+        resetForm.style.display = 'none';
+        loginForm.style.display = 'block';
+    };
+
+    btnOpenReset?.addEventListener('click', showResetMode);
+    btnBackLogin?.addEventListener('click', showLoginMode);
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('reset') === '1') {
+        showResetMode();
+        document.getElementById('reset-user').value = params.get('user') || '';
+        document.getElementById('reset-token').value = params.get('token') || '';
+    }
+
+    // Verificar se já está logado
     const isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
     if (isLoggedIn) {
         loginContainer.style.display = 'none';
@@ -54,6 +79,25 @@ function initLogin() {
             document.getElementById('login-password').value = '';
             document.getElementById('login-password').focus();
             setTimeout(() => loginError.classList.remove('show'), 3000);
+        }
+    });
+
+    resetForm?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const username = document.getElementById('reset-user').value.trim();
+        const token = document.getElementById('reset-token').value.trim();
+        const newPassword = document.getElementById('reset-new-password').value;
+
+        try {
+            await API.post('/api/auth/reset-password', { username, token, new_password: newPassword });
+            showToast('success', 'Senha redefinida', 'Agora faça login com a nova senha');
+            resetForm.reset();
+            showLoginMode();
+            history.replaceState({}, document.title, window.location.pathname);
+        } catch (error) {
+            resetError.textContent = 'Token inválido/expirado ou dados incorretos';
+            resetError.classList.add('show');
+            setTimeout(() => resetError.classList.remove('show'), 3500);
         }
     });
 }
@@ -1617,7 +1661,8 @@ async function gerarTokenAdmin() {
             username
         };
         const result = await API.post('/api/admin/token', payload);
-        document.getElementById('admin-token-result').value = `${result.token} (expira: ${new Date(result.expira_em).toLocaleString('pt-BR')})`;
+        const link = `${window.location.origin}/?reset=1&user=${encodeURIComponent(result.username)}&token=${encodeURIComponent(result.token)}`;
+        document.getElementById('admin-token-result').value = `${result.token} | Link: ${link} | expira: ${new Date(result.expira_em).toLocaleString('pt-BR')}`;
         showToast('success', 'Token gerado', `Token gerado para ${result.username}`);
     } catch (error) {
         showToast('error', 'Erro', 'Não foi possível gerar token');
@@ -1656,6 +1701,10 @@ function initApp() {
 
     // Inicializar visual moderno
     initModernUI();
+
+    const currentUserName = sessionStorage.getItem('userName') || 'Usuário';
+    document.getElementById('user-name').textContent = currentUserName;
+    document.getElementById('user-avatar').textContent = getInitials(currentUserName);
 
     const role = sessionStorage.getItem('userRole') || 'user';
     if (role === 'admin') {
