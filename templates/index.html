@@ -24,6 +24,7 @@
         }
     </script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="/static/css/styles.css">
 </head>
 <body>
@@ -255,11 +256,7 @@
                     <div class="data-section dashboard-analytics">
                         <div class="data-header">
                             <h2 class="data-title">Análises do Banco de Horas</h2>
-                            <div class="data-actions">
-                                <button class="btn btn-primary" id="btn-novo-registro">
-                                    <i data-lucide="plus"></i> Novo Registro
-                                </button>
-                            </div>
+
                         </div>
 
                         <div class="filters-row dashboard-filters-row">
@@ -283,15 +280,15 @@
                         <div class="dashboard-charts-grid">
                             <div class="chart-card">
                                 <h3>Horas por Mês</h3>
-                                <img id="chart-horas-mes" alt="Gráfico de horas por mês" />
+                                <canvas id="chart-horas-mes"></canvas>
                             </div>
                             <div class="chart-card">
                                 <h3>Saldo por Setor</h3>
-                                <img id="chart-saldo-setor" alt="Gráfico de saldo por setor" />
+                                <canvas id="chart-saldo-setor"></canvas>
                             </div>
                             <div class="chart-card chart-card-wide">
                                 <h3>Top 10 Servidores por Saldo</h3>
-                                <img id="chart-top-servidores" alt="Gráfico top servidores por saldo" />
+                                <canvas id="chart-top-servidores"></canvas>
                             </div>
                         </div>
                     </div>
@@ -398,13 +395,19 @@
                 <div id="page-registros" class="page hidden">
                     <div class="data-section">
                         <div class="data-header">
-                            <h2 class="data-title">Registros de Dias Trabalhados</h2>
+                            <h2 class="data-title">Registros</h2>
                             <div class="data-actions">
                                 <button class="btn btn-primary" id="btn-novo-registro-page">
                                     <i data-lucide="plus"></i> Novo Registro
                                 </button>
                             </div>
                         </div>
+
+                        <div class="view-toggle" id="registros-view-toggle">
+                            <button class="toggle-btn active" data-view="detalhado">Ver registros dos servidores</button>
+                            <button class="toggle-btn" data-view="resumo">Ver resumo aglutinado</button>
+                        </div>
+
                         <div class="filters-row">
                             <div class="filter-group">
                                 <label>Setor:</label>
@@ -424,6 +427,7 @@
                             </div>
                             <button class="btn btn-sm btn-secondary" id="btn-limpar-filtros">Limpar</button>
                         </div>
+                        <div class="registros-detalhado" id="registros-detalhado">
                         <div class="data-table-wrapper">
                             <table class="data-table" id="table-registros">
                                 <thead>
@@ -457,8 +461,9 @@
                                 <!-- Paginação via JavaScript -->
                             </div>
                         </div>
+                        </div>
                     </div>
-                        <div class="data-section resumo-registros-section">
+                        <div class="data-section resumo-registros-section hidden" id="registros-resumo">
                             <div class="data-header">
                                 <h2 class="data-title">Resumo Aglutinado por Servidor</h2>
                             </div>
@@ -471,8 +476,11 @@
                                             <th>Setor</th>
                                             <th>Registros</th>
                                             <th>H. Direito (Total)</th>
+                                            <th>Dias de Direito</th>
                                             <th>H. Gozadas (Total)</th>
+                                            <th>Dias Gozados</th>
                                             <th>Saldo (Total)</th>
+                                            <th>Saldo (Dias)</th>
                                         </tr>
                                     </thead>
                                     <tbody id="tbody-registros-resumo"></tbody>
@@ -756,6 +764,54 @@
                 <button class="btn btn-danger" id="btn-excluir-registro">Excluir</button>
                 <button class="btn btn-secondary" data-close-modal>Cancelar</button>
                 <button class="btn btn-primary" id="btn-atualizar-registro">Salvar Alterações</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Modal: Registrar Gozo/Horas -->
+    <div class="modal-overlay" id="modal-gozo-registro">
+        <div class="modal" style="max-width: 620px;">
+            <div class="modal-header">
+                <h3 class="modal-title">Registrar Gozo / Uso de Horas</h3>
+                <button class="modal-close" data-close-modal>&times;</button>
+            </div>
+            <div class="modal-body">
+                <form class="modal-form" id="form-gozo-registro">
+                    <input type="hidden" id="gozo-reg-id">
+                    <div class="form-group">
+                        <label>Servidor</label>
+                        <input type="text" id="gozo-servidor" readonly class="readonly-field">
+                    </div>
+                    <div class="form-group">
+                        <label for="gozo-dias-datas">Dias Gozados (datas)</label>
+                        <input type="text" id="gozo-dias-datas" placeholder="Ex: 15/01/2026, 16/01/2026">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="gozo-dias-quantidade">Quantidade de dias gozados</label>
+                            <input type="number" step="0.5" min="0" id="gozo-dias-quantidade" placeholder="Ex: 2">
+                        </div>
+                        <div class="form-group">
+                            <label for="gozo-horas-descontadas">Horas descontadas</label>
+                            <input type="text" id="gozo-horas-descontadas" placeholder="Ex: 16:00">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Saldo restante (horas)</label>
+                            <input type="text" id="gozo-saldo-horas" readonly class="readonly-field">
+                        </div>
+                        <div class="form-group">
+                            <label>Saldo restante (dias)</label>
+                            <input type="text" id="gozo-saldo-dias" readonly class="readonly-field">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-close-modal>Cancelar</button>
+                <button class="btn btn-primary" id="btn-salvar-gozo">Salvar Gozo</button>
             </div>
         </div>
     </div>
