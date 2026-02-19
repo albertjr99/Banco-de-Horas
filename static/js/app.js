@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Banco de Horas - IPAJM
  * JavaScript Moderno
  */
@@ -926,6 +926,7 @@ function navigateTo(pageId) {
 // Calendário e Notificações
 // ===================================
 
+const ALERTA_DIAS_LIMITE = 30;
 let currentCalendarMonth = new Date().getMonth();
 let currentCalendarYear = new Date().getFullYear();
 let alertasData = [];
@@ -982,8 +983,8 @@ function calcularAlertas() {
         const diffTime = prazoDate.getTime() - hoje.getTime();
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         
-        // Alertar se faltam 15 dias ou menos
-        if (diffDays <= 15 && diffDays >= 0) {
+        // Alertar apenas quando faltar até 30 dias (sem incluir vencidos)
+        if (diffDays <= ALERTA_DIAS_LIMITE && diffDays >= 0) {
             const servidor = servidores.find(s => s.nf === r.nf);
             
             // Só adicionar se tiver nome do servidor
@@ -1038,7 +1039,7 @@ function renderNotifications() {
                     <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
                     <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
                 </svg>
-                <p>Nenhum alerta de prazo</p>
+                <p>Nenhum alerta para os próximos 30 dias</p>
             </div>
         `;
         countEl.textContent = '0 alertas';
@@ -1155,12 +1156,10 @@ function getEventosNoDia(data) {
         const diffTime = prazoDate.getTime() - hoje.getTime();
         const diasRestantes = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         
-        // Verificar prazo máximo - mostrar no calendário
-        if (prazoStr === dataStr) {
-            let tipo = 'normal';
-            if (diasRestantes <= 7) tipo = 'urgent';
-            else if (diasRestantes <= 15) tipo = 'warning';
-            
+        // Verificar prazo máximo - exibir apenas alertas até 30 dias
+        if (prazoStr === dataStr && diasRestantes >= 0 && diasRestantes <= ALERTA_DIAS_LIMITE) {
+            const tipo = diasRestantes <= 7 ? 'urgent' : 'warning';
+
             eventos.push({
                 nf: r.nf,
                 nome: servidor.nome,
@@ -1205,14 +1204,14 @@ function renderAlertasList() {
                     <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
                     <polyline points="22 4 12 14.01 9 11.01"/>
                 </svg>
-                <p>Nenhum prazo próximo de vencer</p>
+                <p>Nenhum vencimento nos próximos 30 dias</p>
             </div>
         `;
-        countEl.textContent = '0 servidores com prazo próximo';
+        countEl.textContent = '0 servidores com alerta em até 30 dias';
         return;
     }
     
-    countEl.textContent = `${alertasData.length} servidor${alertasData.length > 1 ? 'es' : ''} com prazo próximo`;
+    countEl.textContent = `${alertasData.length} servidor${alertasData.length > 1 ? 'es' : ''} com alerta em até ${ALERTA_DIAS_LIMITE} dias`;
     
     list.innerHTML = alertasData.map(a => `
         <div class="alerta-item ${a.tipo}" onclick="consultarServidor('${a.nf}')">
@@ -1414,6 +1413,14 @@ function initApp() {
         }
     });
     
+
+    // Logout
+    document.getElementById('btn-logout')?.addEventListener('click', () => {
+        sessionStorage.removeItem('isLoggedIn');
+        sessionStorage.removeItem('userName');
+        window.location.reload();
+    });
+
     // Toggle sidebar (mobile)
     document.getElementById('toggle-sidebar').addEventListener('click', () => {
         document.getElementById('sidebar').classList.toggle('open');
