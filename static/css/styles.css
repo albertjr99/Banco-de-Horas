@@ -1388,3 +1388,60 @@ input::placeholder, textarea::placeholder { color: #94a3b8 !important; }
     .dashboard-charts-grid { grid-template-columns: 1fr; }
     .chart-card-wide { grid-column: span 1; }
 }
+
+/* ===================================
+   REFINOS FINAIS - gráficos interativos, fontes e toggle
+   =================================== */
+.chart-card canvas {
+    width: 100% !important;
+    height: 300px !important;
+}
+.chart-card-wide canvas { height: 340px !important; }
+
+/* Fonte mais moderna para números em registros */
+.data-table .cell-date,
+.data-table .cell-time,
+.data-table .cell-hours,
+.data-table .cell-nf,
+.data-table td:nth-child(4),
+.data-table td:nth-child(5),
+.data-table td:nth-child(6) {
+    font-family: 'Inter', 'Segoe UI', sans-serif !important;
+    font-size: 15px !important;
+    font-weight: 650;
+    letter-spacing: 0.25px;
+}
+
+.view-toggle {
+    display: inline-flex;
+    gap: 8px;
+    padding: 8px;
+    border: 1px solid rgba(148,163,184,.35);
+    border-radius: 14px;
+    background: rgba(15,23,42,.55);
+    margin: 6px 0 12px;
+}
+.toggle-btn {
+    border: 1px solid rgba(148,163,184,.34);
+    background: rgba(51,65,85,.45);
+    color: #e2e8f0;
+    border-radius: 10px;
+    padding: 9px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.toggle-btn.active {
+    background: linear-gradient(135deg, #0ea5e9, #2563eb);
+    border-color: rgba(125,211,252,.7);
+    color: #fff;
+    box-shadow: 0 10px 22px rgba(37,99,235,.35);
+}
+
+.btn-icon.view {
+    background: rgba(14,165,233,.15);
+    color: #7dd3fc;
+    border-color: rgba(125,211,252,.4);
+}
+.btn-icon.view:hover { background: rgba(14,165,233,.28); }
+
