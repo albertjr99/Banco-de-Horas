@@ -195,6 +195,17 @@ function timeToMinutes(timeStr) {
     return h * 60 + m;
 }
 
+function formatHoursWithH(timeStr) {
+    if (!timeStr || timeStr === '-') return '-';
+    return `${timeStr} H`;
+}
+
+function formatDaysFromTime(timeStr, horaDia = '08:00') {
+    const mins = timeToMinutes(timeStr || '00:00');
+    const minsDia = timeToMinutes(horaDia || '08:00') || 480;
+    return `${(mins / minsDia).toFixed(2)} dias`;
+}
+
 function calcularHoras(entrada, saida) {
     if (!entrada || !saida) return '00:00';
     const [h1, m1] = entrada.split(':').map(Number);
@@ -294,8 +305,8 @@ async function loadData() {
         setores = new Set(servidores.map(s => s.setor).filter(Boolean));
         
         // Atualizar badges
-        document.getElementById('badge-servidores').textContent = servidores.length;
-        document.getElementById('badge-registros').textContent = registros.length;
+        document.getElementById('badge-servidores')?.replaceChildren(document.createTextNode(String(servidores.length)));
+        document.getElementById('badge-registros')?.replaceChildren(document.createTextNode(String(registros.length)));
         
         // Preencher selects de setores
         populateSetorFilters();
@@ -363,10 +374,10 @@ function updateStats() {
     const saldoM = Math.abs(saldoMin) % 60;
     const saldo = `${saldoMin < 0 ? '-' : ''}${String(saldoH).padStart(2, '0')}:${String(saldoM).padStart(2, '0')}`;
     
-    document.getElementById('stat-horas-trabalhadas').textContent = horasTrab;
-    document.getElementById('stat-horas-direito').textContent = horasDireito;
-    document.getElementById('stat-horas-gozadas').textContent = horasGozadas || '00:00';
-    document.getElementById('stat-saldo').textContent = saldo;
+    document.getElementById('stat-horas-trabalhadas').textContent = formatHoursWithH(horasTrab);
+    document.getElementById('stat-horas-direito').textContent = formatHoursWithH(horasDireito);
+    document.getElementById('stat-horas-gozadas').textContent = formatHoursWithH(horasGozadas || '00:00');
+    document.getElementById('stat-saldo').textContent = formatHoursWithH(saldo);
 }
 
 // ===================================
@@ -439,16 +450,16 @@ function renderRegistros(page = 1) {
                     <td class="cell-date">${formatDate(r.dia_trabalhado)}</td>
                     <td class="cell-time">${formatTime(r.entrada)}</td>
                     <td class="cell-time">${formatTime(r.saida)}</td>
-                    <td><span class="cell-hours positive">${r.h_trabalhada || '-'}</span></td>
-                    <td><span class="cell-hours neutral">${r.h_direito || '-'}</span></td>
+                    <td><span class="cell-hours positive">${formatHoursWithH(r.h_trabalhada || '-')}</span></td>
+                    <td><span class="cell-hours neutral">${formatHoursWithH(r.h_direito || '-')}</span></td>
                     <td class="cell-date">${formatDate(r.prazo_max)}</td>
                     <td class="cell-date">${r.dias_gozados || '-'}</td>
-                    <td><span class="cell-hours ${r.horas_descontadas ? 'negative' : 'neutral'}">${r.horas_descontadas || '-'}</span></td>
-                    <td><span class="cell-hours ${getSaldoClass(r.saldo)}">${r.saldo || '-'}</span></td>
+                    <td><span class="cell-hours ${r.horas_descontadas ? 'negative' : 'neutral'}">${formatHoursWithH(r.horas_descontadas || '-')}</span></td>
+                    <td><span class="cell-hours ${getSaldoClass(r.saldo)}">${formatHoursWithH(r.saldo || '-')}</span></td>
                     <td class="cell-obs" title="${r.observacao || ''}">${truncateText(r.observacao, 20) || '-'}</td>
                     <td class="table-actions">
                         <button class="btn-icon edit" onclick="editarRegistro(${r.id})" title="Editar"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-                        <button class="btn-icon view" onclick="abrirModalGozo(${r.id})" title="Registrar gozo"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></button>
+                        <button class="btn-icon view" onclick="abrirModalGozo(${r.id})" title="Descontar horas"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></button>
                     <button class="btn-icon delete" onclick="confirmarExclusao(${r.id})" title="Excluir"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
                     </td>
                 </tr>
@@ -506,12 +517,12 @@ function renderRegistrosResumo(filteredRegs = []) {
                 <td class="cell-name">${i.nome}</td>
                 <td><span class="cell-setor">${i.setor}</span></td>
                 <td>${i.registros}</td>
-                <td><span class="cell-hours neutral">${totalDireito}</span></td>
-                <td>${(timeToMinutes(totalDireito) / 480).toFixed(2)}</td>
-                <td><span class="cell-hours negative">${totalGozadas}</span></td>
-                <td>${(timeToMinutes(totalGozadas) / 480).toFixed(2)}</td>
-                <td><span class="cell-hours ${getSaldoClass(saldo)}">${saldo}</span></td>
-                <td>${(saldoMin / 480).toFixed(2)}</td>
+                <td><span class="cell-hours neutral">${formatHoursWithH(totalDireito)}</span></td>
+                <td>${(timeToMinutes(totalDireito) / 480).toFixed(2)} dias</td>
+                <td><span class="cell-hours negative">${formatHoursWithH(totalGozadas)}</span></td>
+                <td>${(timeToMinutes(totalGozadas) / 480).toFixed(2)} dias</td>
+                <td><span class="cell-hours ${getSaldoClass(saldo)}">${formatHoursWithH(saldo)}</span></td>
+                <td>${(saldoMin / 480).toFixed(2)} dias</td>
             </tr>
         `;
     });
@@ -537,11 +548,11 @@ async function loadDashboardCharts() {
         if (setor && r.setor !== setor) return false;
         const d = r.dia_trabalhado ? new Date(r.dia_trabalhado) : null;
         if (startMonth && d) {
-            const start = new Date(`${startMonth}-01`);
+            const start = new Date(`${startMonth}-01T00:00:00`);
             if (d < start) return false;
         }
         if (endMonth && d) {
-            const end = new Date(`${endMonth}-28`);
+            const end = new Date(`${endMonth}-01T00:00:00`);
             end.setMonth(end.getMonth() + 1);
             if (d >= end) return false;
         }
@@ -554,82 +565,134 @@ async function loadDashboardCharts() {
 
     filtered.forEach(r => {
         const mes = r.dia_trabalhado ? r.dia_trabalhado.slice(0, 7) : 'Sem data';
-        if (!porMes.has(mes)) porMes.set(mes, { trab: 0, direito: 0, gozadas: 0 });
+        if (!porMes.has(mes)) porMes.set(mes, { trab: 0, direito: 0, descontadas: 0 });
         porMes.get(mes).trab += timeToMinutes(r.h_trabalhada || '00:00');
         porMes.get(mes).direito += timeToMinutes(r.h_direito || '00:00');
-        porMes.get(mes).gozadas += timeToMinutes(r.horas_descontadas || '00:00');
+        porMes.get(mes).descontadas += timeToMinutes(r.horas_descontadas || '00:00');
 
         const saldo = timeToMinutes(r.h_direito || '00:00') - timeToMinutes(r.horas_descontadas || '00:00');
-        const s = r.setor || 'Sem setor';
-        porSetor.set(s, (porSetor.get(s) || 0) + saldo);
-
-        const srv = `${r.nome || 'Sem nome'} (${r.nf})`;
-        porServidor.set(srv, (porServidor.get(srv) || 0) + saldo);
+        porSetor.set(r.setor || 'Sem setor', (porSetor.get(r.setor || 'Sem setor') || 0) + saldo);
+        const servidorNome = `${r.nome || 'Sem nome'} (${r.nf})`;
+        porServidor.set(servidorNome, (porServidor.get(servidorNome) || 0) + saldo);
     });
 
-    const months = Array.from(porMes.keys()).sort();
-    const trabData = months.map(m => +(porMes.get(m).trab / 60).toFixed(2));
-    const direitoData = months.map(m => +(porMes.get(m).direito / 60).toFixed(2));
-    const gozadasData = months.map(m => +(porMes.get(m).gozadas / 60).toFixed(2));
+    const labelsMes = Array.from(porMes.keys()).sort();
+    const dadosTrab = labelsMes.map(m => +(porMes.get(m).trab / 60).toFixed(2));
+    const dadosDireito = labelsMes.map(m => +(porMes.get(m).direito / 60).toFixed(2));
+    const dadosDescontadas = labelsMes.map(m => +(porMes.get(m).descontadas / 60).toFixed(2));
 
-    const setores = Array.from(porSetor.entries()).sort((a,b)=>b[1]-a[1]).slice(0,8);
-    const setorLabels = setores.map(([k])=>k);
-    const setorValues = setores.map(([,v])=> +(v/60).toFixed(2));
+    const setores = Array.from(porSetor.entries()).sort((a,b)=>b[1]-a[1]).slice(0, 10);
+    const labelsSetor = setores.map(([k]) => k);
+    const dadosSetor = setores.map(([,v]) => +(v / 60).toFixed(2));
 
-    const tops = Array.from(porServidor.entries()).sort((a,b)=>b[1]-a[1]).slice(0,10);
-    const topLabels = tops.map(([k])=>k);
-    const topValues = tops.map(([,v])=> +(v/60).toFixed(2));
+    const tops = Array.from(porServidor.entries()).sort((a,b)=>b[1]-a[1]).slice(0, 10);
+    const labelsTop = tops.map(([k]) => k);
+    const dadosTop = tops.map(([,v]) => +(v / 60).toFixed(2));
 
-    const tooltipPercent = (context, totalArr) => {
-        const v = context.parsed.y ?? context.parsed.x ?? 0;
-        const total = totalArr.reduce((a,b)=>a+Math.abs(b),0) || 1;
-        const pct = (Math.abs(v) / total) * 100;
-        return `${context.dataset.label || 'Valor'}: ${v.toFixed(2)}h (${pct.toFixed(1)}%)`;
+    const allLine = [...dadosTrab, ...dadosDireito, ...dadosDescontadas];
+    const minLine = allLine.length ? Math.min(...allLine) : 0;
+    const maxLine = allLine.length ? Math.max(...allLine) : 0;
+    const minSetor = dadosSetor.length ? Math.min(...dadosSetor) : 0;
+    const maxSetor = dadosSetor.length ? Math.max(...dadosSetor) : 0;
+
+    const tooltipLabel = (ctx, arr) => {
+        const raw = ctx.parsed;
+        const value = typeof raw === 'number' ? raw : (raw.x ?? raw.y ?? 0);
+        const total = arr.reduce((acc, v) => acc + Math.abs(v), 0) || 1;
+        const pct = (Math.abs(value) / total) * 100;
+        return `${ctx.dataset.label || 'Valor'}: ${value.toFixed(2)} H (${pct.toFixed(1)}%)`;
     };
 
+    Chart.defaults.devicePixelRatio = 2;
     Object.values(dashboardCharts).forEach(c => c && c.destroy());
 
     dashboardCharts.horasMes = new Chart(canvasHoras, {
         type: 'line',
         data: {
-            labels: months,
+            labels: labelsMes,
             datasets: [
-                { label: 'Horas Trabalhadas', data: trabData, borderColor: '#38bdf8', backgroundColor: '#38bdf844', tension: .35, fill: false },
-                { label: 'Horas de Direito', data: direitoData, borderColor: '#22c55e', backgroundColor: '#22c55e44', tension: .35, fill: false },
-                { label: 'Horas Gozadas', data: gozadasData, borderColor: '#f59e0b', backgroundColor: '#f59e0b44', tension: .35, fill: false }
+                { label: 'Horas Trabalhadas', data: dadosTrab, borderColor: '#38bdf8', backgroundColor: '#38bdf833', pointRadius: 4, pointHoverRadius: 7, tension: 0.33 },
+                { label: 'Horas de Direito', data: dadosDireito, borderColor: '#22c55e', backgroundColor: '#22c55e33', pointRadius: 4, pointHoverRadius: 7, tension: 0.33 },
+                { label: 'Horas Descontadas', data: dadosDescontadas, borderColor: '#f59e0b', backgroundColor: '#f59e0b33', pointRadius: 4, pointHoverRadius: 7, tension: 0.33 }
             ]
         },
         options: {
             responsive: true,
+            maintainAspectRatio: false,
+            animation: { duration: 350, easing: 'easeOutCubic' },
+            interaction: { mode: 'nearest', intersect: false },
             plugins: {
                 legend: { labels: { color: '#e2e8f0' } },
-                tooltip: { callbacks: { label: (ctx) => tooltipPercent(ctx, [ ...trabData, ...direitoData, ...gozadasData ]) } }
+                tooltip: {
+                    backgroundColor: '#0f172a',
+                    borderColor: '#334155',
+                    borderWidth: 1,
+                    callbacks: {
+                        label: (ctx) => tooltipLabel(ctx, allLine),
+                        footer: () => [`Mínimo: ${minLine.toFixed(2)} H`, `Máximo: ${maxLine.toFixed(2)} H`]
+                    }
+                }
             },
             scales: {
                 x: { ticks: { color: '#cbd5e1' }, grid: { color: '#33415566' } },
-                y: { ticks: { color: '#cbd5e1' }, grid: { color: '#33415566' } }
+                y: { ticks: { color: '#cbd5e1', callback: (v) => `${v} H` }, grid: { color: '#33415566' } }
             }
         }
     });
 
     dashboardCharts.saldoSetor = new Chart(canvasSetor, {
         type: 'bar',
-        data: { labels: setorLabels, datasets: [{ label: 'Saldo (h)', data: setorValues, backgroundColor: setorValues.map(v => v >= 0 ? '#22c55ecc' : '#ef4444cc') }] },
+        data: {
+            labels: labelsSetor,
+            datasets: [{ label: 'Saldo', data: dadosSetor, backgroundColor: dadosSetor.map(v => v >= 0 ? '#22c55ed9' : '#ef4444d9'), borderRadius: 8 }]
+        },
         options: {
             indexAxis: 'y',
-            plugins: { legend: { labels: { color: '#e2e8f0' } }, tooltip: { callbacks: { label: (ctx) => tooltipPercent(ctx, setorValues) } } },
-            scales: { x: { ticks: { color: '#cbd5e1' }, grid: { color: '#33415566' } }, y: { ticks: { color: '#cbd5e1' }, grid: { color: '#33415533' } } }
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: { duration: 320, easing: 'easeOutQuart' },
+            interaction: { mode: 'nearest', intersect: true },
+            plugins: {
+                legend: { labels: { color: '#e2e8f0' } },
+                tooltip: {
+                    backgroundColor: '#0f172a',
+                    borderColor: '#334155',
+                    borderWidth: 1,
+                    callbacks: {
+                        label: (ctx) => tooltipLabel(ctx, dadosSetor),
+                        footer: () => [`Mínimo: ${minSetor.toFixed(2)} H`, `Máximo: ${maxSetor.toFixed(2)} H`]
+                    }
+                }
+            },
+            scales: {
+                x: { ticks: { color: '#cbd5e1', callback: (v) => `${v} H` }, grid: { color: '#33415555' } },
+                y: { ticks: { color: '#cbd5e1' }, grid: { color: '#33415522' } }
+            }
         }
     });
 
     dashboardCharts.topServidores = new Chart(canvasTop, {
         type: 'bar',
-        data: { labels: topLabels, datasets: [{ label: 'Saldo (h)', data: topValues, backgroundColor: '#60a5facc' }] },
+        data: { labels: labelsTop, datasets: [{ label: 'Saldo', data: dadosTop, backgroundColor: '#60a5fad9', borderRadius: 8 }] },
         options: {
-            plugins: { legend: { labels: { color: '#e2e8f0' } }, tooltip: { callbacks: { label: (ctx) => tooltipPercent(ctx, topValues) } } },
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: { duration: 320, easing: 'easeOutQuart' },
+            interaction: { mode: 'nearest', intersect: true },
+            plugins: {
+                legend: { labels: { color: '#e2e8f0' } },
+                tooltip: {
+                    backgroundColor: '#0f172a',
+                    borderColor: '#334155',
+                    borderWidth: 1,
+                    callbacks: {
+                        label: (ctx) => tooltipLabel(ctx, dadosTop)
+                    }
+                }
+            },
             scales: {
-                x: { ticks: { color: '#cbd5e1', maxRotation: 25, minRotation: 25 }, grid: { color: '#33415533' } },
-                y: { ticks: { color: '#cbd5e1' }, grid: { color: '#33415566' } }
+                x: { ticks: { color: '#cbd5e1', maxRotation: 25, minRotation: 25 }, grid: { color: '#33415522' } },
+                y: { ticks: { color: '#cbd5e1', callback: (v) => `${v} H` }, grid: { color: '#33415555' } }
             }
         }
     });
@@ -692,8 +755,8 @@ function renderServidores(page = 1) {
                     <td class="cell-nf">${s.nf}</td>
                     <td class="cell-name">${s.nome}</td>
                     <td><span class="cell-setor">${s.setor || '-'}</span></td>
-                    <td><span class="cell-hours neutral">${horasTrab}</span></td>
-                    <td><span class="cell-hours ${saldoClass}">${saldo}</span></td>
+                    <td><span class="cell-hours neutral">${formatHoursWithH(horasTrab)}</span></td>
+                    <td><span class="cell-hours ${saldoClass}">${formatHoursWithH(saldo)}</span></td>
                     <td class="table-actions">
                         <button class="btn-icon view" onclick="consultarServidor('${s.nf}')" title="Ver detalhes"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/></svg></button>
                         <button class="btn-icon edit" onclick="editarServidor('${s.nf}')" title="Editar"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
@@ -772,10 +835,10 @@ async function consultarServidor(nf) {
     const saldoM = Math.abs(saldoMin) % 60;
     const saldo = `${saldoMin < 0 ? '-' : ''}${String(saldoH).padStart(2, '0')}:${String(saldoM).padStart(2, '0')}`;
     
-    document.getElementById('srv-horas-trab').textContent = horasTrab;
-    document.getElementById('srv-horas-direito').textContent = horasDireito;
-    document.getElementById('srv-horas-gozadas').textContent = horasGozadas || '00:00';
-    document.getElementById('srv-saldo').textContent = saldo;
+    document.getElementById('srv-horas-trab').textContent = `${formatHoursWithH(horasTrab)} • ${formatDaysFromTime(horasTrab)}`;
+    document.getElementById('srv-horas-direito').textContent = `${formatHoursWithH(horasDireito)} • ${formatDaysFromTime(horasDireito)}`;
+    document.getElementById('srv-horas-gozadas').textContent = `${formatHoursWithH(horasGozadas || '00:00')} • ${formatDaysFromTime(horasGozadas || '00:00')}`;
+    document.getElementById('srv-saldo').textContent = `${formatHoursWithH(saldo)} • ${formatDaysFromTime(saldo)}`;
     document.getElementById('srv-saldo').className = `value ${saldoMin >= 0 ? 'positive' : 'negative'}`;
     
     // Renderizar histórico
@@ -790,12 +853,12 @@ async function consultarServidor(nf) {
                 <td class="cell-date">${formatDate(r.dia_trabalhado)}</td>
                 <td class="cell-time">${formatTime(r.entrada)}</td>
                 <td class="cell-time">${formatTime(r.saida)}</td>
-                <td><span class="cell-hours positive">${r.h_trabalhada || '-'}</span></td>
-                <td><span class="cell-hours neutral">${r.h_direito || '-'}</span></td>
+                <td><span class="cell-hours positive">${formatHoursWithH(r.h_trabalhada || '-')}</span></td>
+                <td><span class="cell-hours neutral">${formatHoursWithH(r.h_direito || '-')}</span></td>
                 <td class="cell-date">${formatDate(r.prazo_max)}</td>
                 <td class="cell-date">${r.dias_gozados || '-'}</td>
-                <td><span class="cell-hours ${r.horas_descontadas ? 'negative' : 'neutral'}">${r.horas_descontadas || '-'}</span></td>
-                <td><span class="cell-hours ${getSaldoClass(r.saldo)}">${r.saldo || '-'}</span></td>
+                <td><span class="cell-hours ${r.horas_descontadas ? 'negative' : 'neutral'}">${formatHoursWithH(r.horas_descontadas || '-')}</span></td>
+                <td><span class="cell-hours ${getSaldoClass(r.saldo)}">${formatHoursWithH(r.saldo || '-')}</span></td>
                 <td class="cell-obs" title="${r.observacao || ''}">${truncateText(r.observacao, 20) || '-'}</td>
                 <td class="table-actions">
                     <button class="btn-icon edit" onclick="editarRegistro(${r.id})" title="Editar"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
@@ -954,7 +1017,7 @@ function abrirModalGozo(id) {
     const saldoMin = timeToMinutes(totalDireito) - timeToMinutes(descontadas);
     document.getElementById('gozo-saldo-horas').value = `${saldoMin < 0 ? '-' : ''}${String(Math.floor(Math.abs(saldoMin)/60)).padStart(2,'0')}:${String(Math.abs(saldoMin)%60).padStart(2,'0')}`;
     const minDia = timeToMinutes(horasDia) || 480;
-    document.getElementById('gozo-saldo-dias').value = (saldoMin / minDia).toFixed(2);
+    document.getElementById('gozo-saldo-dias').value = `${(saldoMin / minDia).toFixed(2)} dias`;
 
     const diasQtd = timeToMinutes(descontadas) / minDia;
     document.getElementById('gozo-dias-quantidade').value = diasQtd > 0 ? diasQtd.toFixed(2) : '';
@@ -987,7 +1050,7 @@ function bindGozoAutoCalc() {
         const gastoMin = timeToMinutes(horasInput.value || '00:00');
         const saldoMin = direitoMin - gastoMin;
         saldoHoras.value = `${saldoMin < 0 ? '-' : ''}${String(Math.floor(Math.abs(saldoMin)/60)).padStart(2,'0')}:${String(Math.abs(saldoMin)%60).padStart(2,'0')}`;
-        saldoDias.value = (saldoMin / minDia).toFixed(2);
+        saldoDias.value = `${(saldoMin / minDia).toFixed(2)} dias`;
     }
 
     diasInput?.addEventListener('input', () => {
@@ -1013,12 +1076,12 @@ async function salvarGozoRegistro() {
             dias_gozados: diasDatas,
             horas_descontadas: horasDescontadas
         });
-        showToast('success', 'Sucesso', 'Gozo/uso de horas atualizado com sucesso');
+        showToast('success', 'Sucesso', 'Desconto de horas atualizado com sucesso');
         closeModal('modal-gozo-registro');
         await loadData();
     } catch (error) {
         console.error(error);
-        showToast('error', 'Erro', 'Não foi possível salvar o gozo');
+        showToast('error', 'Erro', 'Não foi possível salvar o desconto de horas');
     }
 }
 
