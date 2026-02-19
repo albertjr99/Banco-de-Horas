@@ -7,6 +7,23 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrainsMono:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    },
+                    boxShadow: {
+                        glow: "0 12px 34px rgba(37, 99, 235, 0.25)"
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="/static/css/styles.css">
 </head>
 <body>
@@ -80,11 +97,11 @@
                 <div class="nav-section">
                     <div class="nav-section-title">Principal</div>
                     <a href="#" class="nav-item active" data-page="dashboard">
-                        <span class="icon">■</span>
+                        <i data-lucide="layout-dashboard" class="icon"></i>
                         Dashboard
                     </a>
                     <a href="#" class="nav-item" data-page="consulta">
-                        <span class="icon">○</span>
+                        <i data-lucide="search" class="icon"></i>
                         Consulta
                     </a>
                 </div>
@@ -92,17 +109,17 @@
                 <div class="nav-section">
                     <div class="nav-section-title">Gestão</div>
                     <a href="#" class="nav-item" data-page="registros">
-                        <span class="icon">≡</span>
+                        <i data-lucide="calendar-clock" class="icon"></i>
                         Dias Trabalhados
                         <span class="badge" id="badge-registros">0</span>
                     </a>
                     <a href="#" class="nav-item" data-page="servidores">
-                        <span class="icon">□</span>
+                        <i data-lucide="users-round" class="icon"></i>
                         Servidores
                         <span class="badge" id="badge-servidores">0</span>
                     </a>
                     <a href="#" class="nav-item" data-page="calendario">
-                        <span class="icon">◫</span>
+                        <i data-lucide="calendar-days" class="icon"></i>
                         Calendário
                         <span class="badge alert" id="badge-alertas">0</span>
                     </a>
@@ -125,7 +142,7 @@
             <!-- Header -->
             <header class="main-header">
                 <div class="header-left">
-                    <button class="icon-btn" id="toggle-sidebar" title="Menu">=</button>
+                    <button class="icon-btn" id="toggle-sidebar" title="Menu"><i data-lucide="panel-left"></i></button>
                     <div>
                         <h1 class="page-title" id="page-title">Dashboard</h1>
                         <div class="breadcrumb">
@@ -137,14 +154,14 @@
                 </div>
                 <div class="header-right">
                     <div class="search-box">
-                        <span class="search-icon">⌕</span>
+                        <span class="search-icon"><i data-lucide="search"></i></span>
                         <input type="text" id="global-search" placeholder="Buscar servidor por NF ou nome...">
                     </div>
                     <div class="header-actions">
                         <div class="zoom-controls">
-                            <button class="icon-btn zoom-btn" id="btn-zoom-out" title="Diminuir zoom">−</button>
+                            <button class="icon-btn zoom-btn" id="btn-zoom-out" title="Diminuir zoom"><i data-lucide="zoom-out"></i></button>
                             <span class="zoom-level" id="zoom-level">100%</span>
-                            <button class="icon-btn zoom-btn" id="btn-zoom-in" title="Aumentar zoom">+</button>
+                            <button class="icon-btn zoom-btn" id="btn-zoom-in" title="Aumentar zoom"><i data-lucide="zoom-in"></i></button>
                         </div>
                         <div class="notification-bell" id="notification-bell" title="Alertas de Prazo">
                             <button class="icon-btn bell-btn">
@@ -164,7 +181,7 @@
                                 </div>
                             </div>
                         </div>
-                        <button class="icon-btn" id="btn-refresh" title="Atualizar dados">↻</button>
+                        <button class="icon-btn" id="btn-refresh" title="Atualizar dados"><i data-lucide="refresh-cw"></i></button>
                     </div>
                 </div>
             </header>
@@ -236,7 +253,7 @@
                             <h2 class="data-title">Últimos Registros</h2>
                             <div class="data-actions">
                                 <button class="btn btn-primary" id="btn-novo-registro">
-                                    <span>+</span> Novo Registro
+                                    <i data-lucide="plus"></i> Novo Registro
                                 </button>
                             </div>
                         </div>
@@ -290,7 +307,7 @@
                                 </select>
                             </div>
                             <button class="btn btn-primary" id="btn-consultar">
-                                <span>⌕</span> Consultar
+                                <i data-lucide="search"></i> Consultar
                             </button>
                         </div>
                     </div>
@@ -332,7 +349,7 @@
                                 <h2 class="data-title">Histórico de Registros</h2>
                                 <div class="data-actions">
                                     <button class="btn btn-primary btn-sm" id="btn-add-registro-servidor">
-                                        <span>+</span> Adicionar Registro
+                                        <i data-lucide="plus"></i> Adicionar Registro
                                     </button>
                                 </div>
                             </div>
@@ -378,7 +395,7 @@
                             <h2 class="data-title">Todos os Dias Trabalhados</h2>
                             <div class="data-actions">
                                 <button class="btn btn-primary" id="btn-novo-registro-page">
-                                    <span>+</span> Novo Registro
+                                    <i data-lucide="plus"></i> Novo Registro
                                 </button>
                             </div>
                         </div>
@@ -444,7 +461,7 @@
                             <h2 class="data-title">Cadastro de Servidores</h2>
                             <div class="data-actions">
                                 <button class="btn btn-primary" id="btn-novo-servidor">
-                                    <span>+</span> Novo Servidor
+                                    <i data-lucide="user-plus"></i> Novo Servidor
                                 </button>
                             </div>
                         </div>

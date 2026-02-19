@@ -67,6 +67,18 @@ function initLogin() {
 // Inicializar login quando a página carregar
 document.addEventListener('DOMContentLoaded', initLogin);
 
+
+function initModernUI() {
+    if (window.lucide) {
+        window.lucide.createIcons();
+    }
+
+    document.querySelectorAll('.stat-card, .data-section, .btn, .icon-btn').forEach((element) => {
+        element.addEventListener('mouseenter', () => element.classList.add('ui-float'));
+        element.addEventListener('mouseleave', () => element.classList.remove('ui-float'));
+    });
+}
+
 // ===================================
 // Zoom Control
 // ===================================
@@ -1276,6 +1288,9 @@ function setupAutoCalculate() {
 function initApp() {
     // Inicializar zoom
     initZoom();
+
+    // Inicializar visual moderno
+    initModernUI();
     
     // Inicializar calendário
     initCalendario();
