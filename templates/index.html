@@ -112,17 +112,17 @@
                     <a href="#" class="nav-item" data-page="registros">
                         <i data-lucide="calendar-clock" class="icon"></i>
                         Registros
-                        <span class="badge" id="badge-registros">0</span>
+                        
                     </a>
                     <a href="#" class="nav-item" data-page="servidores">
                         <i data-lucide="users-round" class="icon"></i>
                         Servidores
-                        <span class="badge" id="badge-servidores">0</span>
+                        
                     </a>
                     <a href="#" class="nav-item" data-page="calendario">
                         <i data-lucide="calendar-days" class="icon"></i>
                         Calendário
-                        <span class="badge alert" id="badge-alertas">0</span>
+                        
                     </a>
                 </div>
             </nav>
@@ -773,7 +773,7 @@
     <div class="modal-overlay" id="modal-gozo-registro">
         <div class="modal" style="max-width: 620px;">
             <div class="modal-header">
-                <h3 class="modal-title">Registrar Gozo / Uso de Horas</h3>
+                <h3 class="modal-title">Descontar Horas de Direito</h3>
                 <button class="modal-close" data-close-modal>&times;</button>
             </div>
             <div class="modal-body">
@@ -784,16 +784,16 @@
                         <input type="text" id="gozo-servidor" readonly class="readonly-field">
                     </div>
                     <div class="form-group">
-                        <label for="gozo-dias-datas">Dias Gozados (datas)</label>
+                        <label for="gozo-dias-datas">Datas de Desconto</label>
                         <input type="text" id="gozo-dias-datas" placeholder="Ex: 15/01/2026, 16/01/2026">
                     </div>
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="gozo-dias-quantidade">Quantidade de dias gozados</label>
+                            <label for="gozo-dias-quantidade">Quantidade (dias)</label>
                             <input type="number" step="0.5" min="0" id="gozo-dias-quantidade" placeholder="Ex: 2">
                         </div>
                         <div class="form-group">
-                            <label for="gozo-horas-descontadas">Horas descontadas</label>
+                            <label for="gozo-horas-descontadas">Desconto (horas)</label>
                             <input type="text" id="gozo-horas-descontadas" placeholder="Ex: 16:00">
                         </div>
                     </div>
@@ -811,7 +811,7 @@
             </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" data-close-modal>Cancelar</button>
-                <button class="btn btn-primary" id="btn-salvar-gozo">Salvar Gozo</button>
+                <button class="btn btn-primary" id="btn-salvar-gozo">Salvar Desconto</button>
             </div>
         </div>
     </div>
