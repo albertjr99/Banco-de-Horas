@@ -7,12 +7,16 @@ from flask import Flask, render_template, jsonify, request, send_file
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from datetime import datetime, timedelta
+from werkzeug.security import generate_password_hash, check_password_hash
 import os
 import shutil
 import json
 from pathlib import Path
 import threading
 import time
+import secrets
+import smtplib
+from email.mime.text import MIMEText
 
 # Configuração da aplicação
 app = Flask(__name__)
@@ -114,6 +118,58 @@ class DiaTrabalhado(db.Model):
             'criado_em': self.criado_em.isoformat() if self.criado_em else None,
             'atualizado_em': self.atualizado_em.isoformat() if self.atualizado_em else None
         }
+
+
+class UsuarioSistema(db.Model):
+    """Usuários de autenticação do sistema"""
+    __tablename__ = 'usuarios_sistema'
+
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False, index=True)
+    password_hash = db.Column(db.String(255), nullable=False)
+    role = db.Column(db.String(20), nullable=False, default='user')  # admin | user
+    email = db.Column(db.String(255), nullable=True)
+    ativo = db.Column(db.Boolean, default=True)
+    criado_em = db.Column(db.DateTime, default=datetime.utcnow)
+    atualizado_em = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def set_password(self, raw_password):
+        self.password_hash = generate_password_hash(raw_password)
+
+    def check_password(self, raw_password):
+        return check_password_hash(self.password_hash, raw_password)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'username': self.username,
+            'role': self.role,
+            'email': self.email,
+            'ativo': self.ativo
+        }
+
+
+class TokenRedefinicao(db.Model):
+    """Tokens de redefinição de senha gerados pelo admin"""
+    __tablename__ = 'tokens_redefinicao'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('usuarios_sistema.id'), nullable=False, index=True)
+    token = db.Column(db.String(120), unique=True, nullable=False, index=True)
+    expira_em = db.Column(db.DateTime, nullable=False)
+    usado = db.Column(db.Boolean, default=False)
+    criado_por = db.Column(db.String(80), nullable=True)
+    criado_em = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class LogEmailAlerta(db.Model):
+    """Controle para evitar envio duplicado de e-mail de alerta no mesmo dia"""
+    __tablename__ = 'log_email_alerta'
+
+    id = db.Column(db.Integer, primary_key=True)
+    registro_id = db.Column(db.Integer, db.ForeignKey('dias_trabalhados.id'), nullable=False, index=True)
+    data_alerta = db.Column(db.Date, nullable=False, index=True)
+    enviado_em = db.Column(db.DateTime, default=datetime.utcnow)
 
 
 # ==================== FUNÇÕES DE BACKUP ====================
@@ -273,12 +329,216 @@ def backup_automatico():
         print(f"Backup automático criado em {datetime.now()}")
 
 
+
+
+def semear_usuarios_iniciais():
+    """Cria usuários iniciais do sistema, se não existirem."""
+    usuarios = [
+        ('admin', '260220', 'admin', None),
+        ('Maria', '1234', 'user', 'maria.nery@ipajm.es.gov.br'),
+        ('Sergio', '1234', 'user', 'sergio.silva@ipajm.es.gov.br'),
+        ('Thiago', '1234', 'user', 'thiago.nunes@ipajm.es.gov.br'),
+        ('Máira', '1234', 'user', 'maira.braga@ipajm.es.gov.br')
+    ]
+
+    for username, senha, role, email in usuarios:
+        existente = UsuarioSistema.query.filter_by(username=username).first()
+        if not existente:
+            u = UsuarioSistema(username=username, role=role, email=email, ativo=True)
+            u.set_password(senha)
+            db.session.add(u)
+    db.session.commit()
+
+
+def verificar_admin_payload(data):
+    """Valida credenciais de admin no payload."""
+    username = (data or {}).get('admin_user')
+    password = (data or {}).get('admin_password')
+    if not username or not password:
+        return None
+
+    admin = UsuarioSistema.query.filter_by(username=username, role='admin', ativo=True).first()
+    if admin and admin.check_password(password):
+        return admin
+    return None
+
+
+def enviar_email_alerta(destinatario, servidor_nome, nf, prazo_max):
+    """Envia e-mail real de alerta de prazo via SMTP."""
+    smtp_host = os.environ.get('SMTP_HOST')
+    smtp_port = int(os.environ.get('SMTP_PORT', '587'))
+    smtp_user = os.environ.get('SMTP_USER')
+    smtp_pass = os.environ.get('SMTP_PASS')
+    smtp_from = os.environ.get('SMTP_FROM', smtp_user or 'noreply@ipajm.es.gov.br')
+
+    if not smtp_host or not smtp_user or not smtp_pass:
+        print('[EMAIL] SMTP não configurado. Defina SMTP_HOST, SMTP_PORT, SMTP_USER e SMTP_PASS.')
+        return False
+
+    assunto = f"[Banco de Horas] Alerta de prazo - {servidor_nome}"
+    corpo = (
+        f"Olá,\n\n"
+        f"O servidor {servidor_nome} (NF {nf}) atingiu o marco de 30 dias para o prazo máximo "
+        f"de uso do banco de horas (prazo máx.: {prazo_max}).\n\n"
+        f"Atenção: acesse o sistema de Banco de Horas para verificar os detalhes e providências.\n\n"
+        f"Mensagem automática do sistema."
+    )
+
+    msg = MIMEText(corpo, _charset='utf-8')
+    msg['Subject'] = assunto
+    msg['From'] = smtp_from
+    msg['To'] = destinatario
+
+    try:
+        with smtplib.SMTP(smtp_host, smtp_port, timeout=20) as server:
+            server.starttls()
+            server.login(smtp_user, smtp_pass)
+            server.sendmail(smtp_from, [destinatario], msg.as_string())
+        return True
+    except Exception as e:
+        print(f'[EMAIL] Falha ao enviar e-mail para {destinatario}: {e}')
+        return False
+
+
+def processar_alertas_email_30_dias():
+    """Verifica alertas de 30 dias e envia e-mail apenas uma vez por dia/registro."""
+    hoje = datetime.utcnow().date()
+    registros = DiaTrabalhado.query.filter(DiaTrabalhado.prazo_max.isnot(None)).all()
+
+    usuarios_email = UsuarioSistema.query.filter(
+        UsuarioSistema.role == 'user',
+        UsuarioSistema.ativo == True,
+        UsuarioSistema.email.isnot(None)
+    ).all()
+    emails_destino = [u.email for u in usuarios_email if u.email]
+
+    if not emails_destino:
+        return
+
+    for r in registros:
+        if not r.prazo_max:
+            continue
+        dias = (r.prazo_max - hoje).days
+        if dias != 30:
+            continue
+
+        ja_enviado = LogEmailAlerta.query.filter_by(registro_id=r.id, data_alerta=hoje).first()
+        if ja_enviado:
+            continue
+
+        servidor_nome = r.nome or 'Servidor'
+        prazo_str = r.prazo_max.strftime('%d/%m/%Y') if r.prazo_max else '-'
+
+        sucesso_geral = True
+        for email in emails_destino:
+            ok = enviar_email_alerta(email, servidor_nome, r.nf, prazo_str)
+            sucesso_geral = sucesso_geral and ok
+
+        if sucesso_geral:
+            db.session.add(LogEmailAlerta(registro_id=r.id, data_alerta=hoje))
+            db.session.commit()
+
+
+def alerta_email_automatico():
+    """Thread para checagem periódica de alertas por e-mail."""
+    while True:
+        try:
+            with app.app_context():
+                processar_alertas_email_30_dias()
+        except Exception as e:
+            print(f'Erro no alerta automático por e-mail: {e}')
+        time.sleep(60 * 60)
+
+
 # ==================== ROTAS DA API ====================
 
 @app.route('/')
 def index():
     """Página principal"""
     return render_template('index.html')
+
+
+
+
+@app.route('/api/auth/login', methods=['POST'])
+def auth_login():
+    data = request.json or {}
+    username = (data.get('username') or '').strip()
+    password = data.get('password') or ''
+
+    user = UsuarioSistema.query.filter_by(username=username, ativo=True).first()
+    if not user or not user.check_password(password):
+        return jsonify({'error': 'Usuário ou senha inválidos'}), 401
+
+    return jsonify({
+        'username': user.username,
+        'role': user.role,
+        'email': user.email
+    })
+
+
+@app.route('/api/auth/reset-password', methods=['POST'])
+def auth_reset_password():
+    data = request.json or {}
+    username = (data.get('username') or '').strip()
+    token = (data.get('token') or '').strip()
+    nova_senha = (data.get('new_password') or '').strip()
+
+    user = UsuarioSistema.query.filter_by(username=username, ativo=True).first()
+    if not user:
+        return jsonify({'error': 'Usuário não encontrado'}), 404
+
+    token_obj = TokenRedefinicao.query.filter_by(user_id=user.id, token=token, usado=False).first()
+    if not token_obj or token_obj.expira_em < datetime.utcnow():
+        return jsonify({'error': 'Token inválido ou expirado'}), 400
+
+    user.set_password(nova_senha)
+    token_obj.usado = True
+    db.session.commit()
+
+    return jsonify({'message': 'Senha redefinida com sucesso'})
+
+
+@app.route('/api/admin/users', methods=['POST'])
+def admin_list_users():
+    data = request.json or {}
+    admin = verificar_admin_payload(data)
+    if not admin:
+        return jsonify({'error': 'Acesso negado'}), 403
+
+    users = UsuarioSistema.query.order_by(UsuarioSistema.username).all()
+    return jsonify([u.to_dict() for u in users])
+
+
+@app.route('/api/admin/token', methods=['POST'])
+def admin_generate_token():
+    data = request.json or {}
+    admin = verificar_admin_payload(data)
+    if not admin:
+        return jsonify({'error': 'Acesso negado'}), 403
+
+    username = (data.get('username') or '').strip()
+    user = UsuarioSistema.query.filter_by(username=username, ativo=True).first()
+    if not user:
+        return jsonify({'error': 'Usuário não encontrado'}), 404
+
+    token = secrets.token_urlsafe(24)
+    expira_em = datetime.utcnow() + timedelta(hours=24)
+
+    token_obj = TokenRedefinicao(
+        user_id=user.id,
+        token=token,
+        expira_em=expira_em,
+        criado_por=admin.username
+    )
+    db.session.add(token_obj)
+    db.session.commit()
+
+    return jsonify({
+        'username': user.username,
+        'token': token,
+        'expira_em': expira_em.isoformat()
+    })
 
 
 # ========== ROTAS DE SERVIDORES ==========
@@ -725,6 +985,7 @@ def inicializar_app():
     """Inicializa o banco de dados e cria tabelas"""
     with app.app_context():
         db.create_all()
+        semear_usuarios_iniciais()
         print("Banco de dados inicializado!")
         
         # Criar backup inicial
@@ -739,6 +1000,10 @@ if __name__ == '__main__':
     # Iniciar thread de backup automático
     backup_thread = threading.Thread(target=backup_automatico, daemon=True)
     backup_thread.start()
+
+    alerta_thread = threading.Thread(target=alerta_email_automatico, daemon=True)
+    alerta_thread.start()
+
     print("Sistema de backup automático ativado!")
     
     # Iniciar aplicação
