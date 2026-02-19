@@ -7,59 +7,53 @@
 // Login System
 // ===================================
 
-const VALID_USER = 'Thiago';
-const VALID_PASSWORD = '1234';
 
 function initLogin() {
     const loginContainer = document.getElementById('login-container');
     const appContainer = document.getElementById('app-container');
     const loginForm = document.getElementById('login-form');
     const loginError = document.getElementById('login-error');
-    
-    // Verificar se já está logado
-    if (sessionStorage.getItem('isLoggedIn') === 'true') {
+
+    const isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
+    if (isLoggedIn) {
         loginContainer.style.display = 'none';
         appContainer.style.display = 'flex';
         initApp();
         return;
     }
-    
-    loginForm.addEventListener('submit', (e) => {
+
+    loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        
-        const user = document.getElementById('login-user').value.trim();
+
+        const username = document.getElementById('login-user').value.trim();
         const password = document.getElementById('login-password').value;
-        
-        if (user === VALID_USER && password === VALID_PASSWORD) {
-            // Login bem-sucedido
+
+        try {
+            const auth = await API.post('/api/auth/login', { username, password });
             sessionStorage.setItem('isLoggedIn', 'true');
-            sessionStorage.setItem('userName', user);
-            
+            sessionStorage.setItem('userName', auth.username);
+            sessionStorage.setItem('userRole', auth.role || 'user');
+            if ((auth.role || 'user') === 'admin') { sessionStorage.setItem('adminPassword', password); }
+
             loginContainer.style.opacity = '0';
             loginContainer.style.transition = 'opacity 0.3s ease';
-            
+
             setTimeout(() => {
                 loginContainer.style.display = 'none';
                 appContainer.style.display = 'flex';
                 appContainer.style.opacity = '0';
-                
                 setTimeout(() => {
                     appContainer.style.transition = 'opacity 0.3s ease';
                     appContainer.style.opacity = '1';
                     initApp();
                 }, 50);
             }, 300);
-        } else {
-            // Login falhou
+        } catch (error) {
             loginError.textContent = 'Usuário ou senha incorretos';
             loginError.classList.add('show');
-            
             document.getElementById('login-password').value = '';
             document.getElementById('login-password').focus();
-            
-            setTimeout(() => {
-                loginError.classList.remove('show');
-            }, 3000);
+            setTimeout(() => loginError.classList.remove('show'), 3000);
         }
     });
 }
@@ -197,7 +191,7 @@ function timeToMinutes(timeStr) {
 
 function formatHoursWithH(timeStr) {
     if (!timeStr || timeStr === '-') return '-';
-    return `${timeStr} H`;
+    return `${timeStr}H`;
 }
 
 function formatDaysFromTime(timeStr, horaDia = '08:00') {
@@ -1205,6 +1199,7 @@ function navigateTo(pageId) {
         registros: 'Registros',
         servidores: 'Servidores',
         calendario: 'Calendário de Prazos',
+        admin: 'Portal do Administrador',
         backup: 'Backup & Restauração'
     };
     document.getElementById('page-title').textContent = titles[pageId] || 'Dashboard';
@@ -1578,6 +1573,57 @@ function setupAutoCalculate() {
 
 
 
+
+
+async function loadAdminPortal() {
+    if (sessionStorage.getItem('userRole') !== 'admin') return;
+
+    const username = sessionStorage.getItem('userName');
+    const adminPassword = sessionStorage.getItem('adminPassword') || '260220';
+
+    try {
+        const users = await API.post('/api/admin/users', {
+            admin_user: username,
+            admin_password: adminPassword
+        });
+
+        const tbody = document.getElementById('tbody-admin-users');
+        const select = document.getElementById('admin-token-user');
+        if (!tbody || !select) return;
+
+        tbody.innerHTML = users.map(u => `
+            <tr>
+                <td>${u.username}</td>
+                <td>${u.role}</td>
+                <td>${u.email || '-'}</td>
+                <td>${u.ativo ? 'Ativo' : 'Inativo'}</td>
+            </tr>
+        `).join('');
+
+        select.innerHTML = users.filter(u => u.role === 'user').map(u => `<option value="${u.username}">${u.username}</option>`).join('');
+    } catch (e) {
+        console.error('Erro ao carregar portal admin', e);
+    }
+}
+
+async function gerarTokenAdmin() {
+    const username = document.getElementById('admin-token-user')?.value;
+    if (!username) return;
+
+    try {
+        const payload = {
+            admin_user: sessionStorage.getItem('userName'),
+            admin_password: sessionStorage.getItem('adminPassword') || '260220',
+            username
+        };
+        const result = await API.post('/api/admin/token', payload);
+        document.getElementById('admin-token-result').value = `${result.token} (expira: ${new Date(result.expira_em).toLocaleString('pt-BR')})`;
+        showToast('success', 'Token gerado', `Token gerado para ${result.username}`);
+    } catch (error) {
+        showToast('error', 'Erro', 'Não foi possível gerar token');
+    }
+}
+
 function initRegistrosViewToggle() {
     const container = document.getElementById('registros-view-toggle');
     const detalhado = document.getElementById('registros-detalhado');
@@ -1610,6 +1656,12 @@ function initApp() {
 
     // Inicializar visual moderno
     initModernUI();
+
+    const role = sessionStorage.getItem('userRole') || 'user';
+    if (role === 'admin') {
+        document.getElementById('nav-admin')?.classList.remove('hidden');
+        loadAdminPortal();
+    }
     
     // Inicializar calendário
     initCalendario();
@@ -1731,6 +1783,9 @@ function initApp() {
     
     // Filtros do dashboard analítico
     document.getElementById('btn-dash-aplicar')?.addEventListener('click', loadDashboardCharts);
+
+    // Admin
+    document.getElementById('btn-admin-gerar-token')?.addEventListener('click', gerarTokenAdmin);
 
     // Global search
     document.getElementById('global-search').addEventListener('keypress', function(e) {
