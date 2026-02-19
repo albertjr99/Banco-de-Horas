@@ -1322,3 +1322,69 @@ input::placeholder, textarea::placeholder { color: #94a3b8 !important; }
 .alerta-nf {
     color: #dbeafe !important;
 }
+
+/* ===================================
+   NOVOS AJUSTES - dashboard analítico + contraste registros/servidores
+   =================================== */
+.dashboard-analytics .dashboard-filters-row,
+#page-registros .filters-row,
+#page-servidores .filters-row {
+    background: rgba(15, 23, 42, 0.52) !important;
+    border: 1px solid rgba(148, 163, 184, 0.26);
+    border-radius: 12px;
+    padding: 12px;
+    margin: 12px 0 16px;
+}
+
+#page-registros .filter-group label,
+#page-servidores .filter-group label,
+.dashboard-analytics .filter-group label {
+    color: #e2e8f0 !important;
+    font-weight: 600;
+}
+
+#page-registros .filter-select,
+#page-registros .filter-input,
+#page-servidores .filter-select,
+#page-servidores .filter-input,
+.dashboard-analytics .filter-select,
+.dashboard-analytics .filter-input {
+    background: rgba(51, 65, 85, 0.82) !important;
+    color: #f8fafc !important;
+    border: 1px solid rgba(148,163,184,.42) !important;
+}
+
+.dashboard-charts-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.chart-card {
+    background: linear-gradient(145deg, rgba(15,23,42,.9), rgba(30,41,59,.8));
+    border: 1px solid rgba(148,163,184,.25);
+    border-radius: 14px;
+    padding: 12px;
+}
+.chart-card h3 {
+    color: #e2e8f0;
+    font-size: 14px;
+    margin-bottom: 8px;
+}
+.chart-card img {
+    width: 100%;
+    border-radius: 10px;
+    min-height: 260px;
+    object-fit: cover;
+    background: rgba(15,23,42,.4);
+}
+.chart-card-wide { grid-column: span 2; }
+
+.resumo-registros-section {
+    margin-top: 16px;
+}
+
+@media (max-width: 900px) {
+    .dashboard-charts-grid { grid-template-columns: 1fr; }
+    .chart-card-wide { grid-column: span 1; }
+}
