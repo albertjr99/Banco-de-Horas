@@ -43,7 +43,7 @@
                     <div class="login-logo-icon">SRH</div>
                 </div>
                 <h1 class="login-title">Banco de Horas</h1>
-                <p class="login-subtitle">Subgerência de Recursos Humanos | IPAJM</p>
+                <p class="login-subtitle">Sistema de Recursos Humanos | IPAJM</p>
             </div>
             <form class="login-form" id="login-form">
                 <div class="form-group">
@@ -73,6 +73,27 @@
                         <path d="M5 12h14M12 5l7 7-7 7"/>
                     </svg>
                 </button>
+                <button type="button" class="btn btn-secondary" id="btn-open-reset" style="width:100%; margin-top:10px;">Esqueci minha senha</button>
+            </form>
+
+            <form class="login-form" id="reset-form" style="display:none;">
+                <div class="form-group">
+                    <label for="reset-user">Usuário</label>
+                    <input type="text" id="reset-user" placeholder="Usuário" required>
+                </div>
+                <div class="form-group">
+                    <label for="reset-token">Token de redefinição</label>
+                    <input type="text" id="reset-token" placeholder="Cole o token" required>
+                </div>
+                <div class="form-group">
+                    <label for="reset-new-password">Nova senha</label>
+                    <input type="password" id="reset-new-password" placeholder="Digite a nova senha" required>
+                </div>
+                <div class="login-error" id="reset-error"></div>
+                <button type="submit" class="login-btn">
+                    <span>Redefinir senha</span>
+                </button>
+                <button type="button" class="btn btn-secondary" id="btn-back-login" style="width:100%; margin-top:10px;">Voltar ao login</button>
             </form>
             <div class="login-footer">
                 <p>IPAJM - Instituto de Previdência</p>
@@ -889,4 +910,3 @@
     <script src="/static/js/app.js"></script>
 </body>
 </html>
-
