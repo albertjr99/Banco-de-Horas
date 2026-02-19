@@ -982,14 +982,17 @@ function calcularAlertas() {
         
         const diffTime = prazoDate.getTime() - hoje.getTime();
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        
-        // Alertar apenas quando faltar até 30 dias (sem incluir vencidos)
-        if (diffDays <= ALERTA_DIAS_LIMITE && diffDays >= 0) {
+
+        // Alertar APENAS quando faltar exatamente 30 dias para o prazo máximo
+        if (diffDays === ALERTA_DIAS_LIMITE) {
             const servidor = servidores.find(s => s.nf === r.nf);
-            
+
             // Só adicionar se tiver nome do servidor
             if (!servidor?.nome) return;
-            
+
+            const dataAviso = new Date(prazoDate);
+            dataAviso.setDate(dataAviso.getDate() - ALERTA_DIAS_LIMITE);
+
             alertasData.push({
                 id: r.id,
                 nf: r.nf,
@@ -997,8 +1000,9 @@ function calcularAlertas() {
                 setor: servidor.setor || '-',
                 prazo_max: r.prazo_max,
                 prazoDate: prazoDate,
+                data_aviso: dataAviso,
                 diasRestantes: diffDays,
-                tipo: diffDays <= 7 ? 'urgent' : 'warning'
+                tipo: 'warning'
             });
         }
     });
@@ -1039,14 +1043,14 @@ function renderNotifications() {
                     <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
                     <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
                 </svg>
-                <p>Nenhum alerta para os próximos 30 dias</p>
+                <p>Nenhum servidor com lembrete de 30 dias hoje</p>
             </div>
         `;
-        countEl.textContent = '0 alertas';
+        countEl.textContent = '0 lembretes';
         return;
     }
     
-    countEl.textContent = `${alertasData.length} alerta${alertasData.length > 1 ? 's' : ''}`;
+    countEl.textContent = `${alertasData.length} lembrete${alertasData.length > 1 ? 's' : ''}`;
     
     list.innerHTML = alertasData.slice(0, 10).map(a => `
         <div class="notification-item ${a.tipo}" onclick="consultarServidor('${a.nf}')">
@@ -1059,7 +1063,7 @@ function renderNotifications() {
             <div class="notification-content">
                 <div class="notification-title">${a.nome}</div>
                 <div class="notification-desc">Prazo máx: ${formatDate(a.prazo_max)}</div>
-                <div class="notification-time">${a.diasRestantes === 0 ? 'Vence hoje!' : `Vence em ${a.diasRestantes} dia${a.diasRestantes > 1 ? 's' : ''}`}</div>
+                <div class="notification-time">Faltam exatamente 30 dias para o prazo máximo</div>
             </div>
         </div>
     `).join('');
@@ -1106,7 +1110,7 @@ function renderCalendario() {
         if (eventos.length > 0) {
             const maxShow = 3;
             eventos.slice(0, maxShow).forEach(e => {
-                eventosHtml += `<div class="day-event ${e.tipo}" onclick="consultarServidor('${e.nf}')" title="${e.nome} - ${e.label}">${e.nome.split(' ')[0]}</div>`;
+                eventosHtml += `<div class="day-event ${e.tipo}" onclick="consultarServidor('${e.nf}')" title="${e.nome} - ${e.label}">${truncateText(e.nome, 16)}</div>`;
             });
             if (eventos.length > maxShow) {
                 eventosHtml += `<div class="day-more">+${eventos.length - maxShow} mais</div>`;
@@ -1152,19 +1156,17 @@ function getEventosNoDia(data) {
         // Só mostrar se tiver nome do servidor
         if (!servidor?.nome) return;
         
-        // Calcular dias restantes
-        const diffTime = prazoDate.getTime() - hoje.getTime();
-        const diasRestantes = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        
-        // Verificar prazo máximo - exibir apenas alertas até 30 dias
-        if (prazoStr === dataStr && diasRestantes >= 0 && diasRestantes <= ALERTA_DIAS_LIMITE) {
-            const tipo = diasRestantes <= 7 ? 'urgent' : 'warning';
+        // Registrar evento de lembrete exatamente 30 dias antes do prazo máximo
+        const dataAviso = new Date(prazoDate);
+        dataAviso.setDate(dataAviso.getDate() - ALERTA_DIAS_LIMITE);
+        const avisoStr = dataAviso.toISOString().split('T')[0];
 
+        if (avisoStr === dataStr) {
             eventos.push({
                 nf: r.nf,
                 nome: servidor.nome,
-                tipo: tipo,
-                label: 'Prazo Máximo'
+                tipo: 'warning',
+                label: 'Lembrete de 30 dias'
             });
         }
     });
@@ -1204,14 +1206,14 @@ function renderAlertasList() {
                     <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
                     <polyline points="22 4 12 14.01 9 11.01"/>
                 </svg>
-                <p>Nenhum vencimento nos próximos 30 dias</p>
+                <p>Nenhum servidor está no marco de 30 dias hoje</p>
             </div>
         `;
-        countEl.textContent = '0 servidores com alerta em até 30 dias';
+        countEl.textContent = '0 servidores com lembrete de 30 dias hoje';
         return;
     }
     
-    countEl.textContent = `${alertasData.length} servidor${alertasData.length > 1 ? 'es' : ''} com alerta em até ${ALERTA_DIAS_LIMITE} dias`;
+    countEl.textContent = `${alertasData.length} servidor${alertasData.length > 1 ? 'es' : ''} com lembrete de 30 dias hoje`;
     
     list.innerHTML = alertasData.map(a => `
         <div class="alerta-item ${a.tipo}" onclick="consultarServidor('${a.nf}')">
@@ -1403,8 +1405,6 @@ function initApp() {
         renderRegistros(1);
     });
     
-    // Refresh
-    document.getElementById('btn-refresh').addEventListener('click', loadData);
     
     // Global search
     document.getElementById('global-search').addEventListener('keypress', function(e) {
