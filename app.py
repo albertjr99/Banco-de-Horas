@@ -19,19 +19,24 @@ import smtplib
 from email.mime.text import MIMEText
 
 # Configuração da aplicação
-app = Flask(__name__)
+BASE_DIR = Path(__file__).resolve().parent
+INSTANCE_DIR = BASE_DIR / 'instance'
+INSTANCE_DIR.mkdir(parents=True, exist_ok=True)
+
+default_db_path = INSTANCE_DIR / 'banco_horas.db'
+default_backup_dir = Path(os.environ.get('BACKUP_FOLDER', str(BASE_DIR / 'backups'))).expanduser()
+default_backup_dir.mkdir(parents=True, exist_ok=True)
+
+app = Flask(__name__, instance_path=str(INSTANCE_DIR))
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'ipajm-banco-horas-2025-secret-key')
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///banco_horas.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', f"sqlite:///{default_db_path}")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JSON_AS_ASCII'] = False
-app.config['BACKUP_FOLDER'] = 'backups'
+app.config['BACKUP_FOLDER'] = str(default_backup_dir)
 
 # Inicializar extensões
 db = SQLAlchemy(app)
 CORS(app)
-
-# Criar pasta de backups
-os.makedirs(app.config['BACKUP_FOLDER'], exist_ok=True)
 
 # ==================== MODELOS DO BANCO DE DADOS ====================
 
@@ -289,6 +294,21 @@ def horas_para_dias(hora_str, horas_por_dia=8):
         return '0'
 
 
+
+def obter_caminho_banco_sqlite():
+    """Resolve o caminho físico do SQLite configurado na aplicação."""
+    uri = app.config.get('SQLALCHEMY_DATABASE_URI', '')
+    prefix = 'sqlite:///'
+    if not uri.startswith(prefix):
+        return None
+
+    raw_path = uri[len(prefix):]
+    db_path = Path(raw_path).expanduser()
+    if not db_path.is_absolute():
+        db_path = INSTANCE_DIR / db_path
+    return db_path
+
+
 def criar_backup():
     """Cria backup do banco de dados"""
     try:
@@ -297,8 +317,8 @@ def criar_backup():
         backup_path = os.path.join(app.config['BACKUP_FOLDER'], backup_filename)
         
         # Copiar banco de dados
-        db_path = 'banco_horas.db'
-        if os.path.exists(db_path):
+        db_path = obter_caminho_banco_sqlite()
+        if db_path and db_path.exists():
             shutil.copy2(db_path, backup_path)
             
             # Manter apenas os últimos 30 backups
